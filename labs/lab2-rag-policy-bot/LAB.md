@@ -20,6 +20,9 @@ Build a GDPR-safe **RAG** app that:
 ---
 
 ## Step 0 — Create Azure AI Search
+If you haven’t done the full environment setup yet, do that first:
+- See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+
 ```bash
 export LOCATION=westeurope
 export RG=<your-rg>
