@@ -1,0 +1,12 @@
+Sample Policy: Acceptable Use
+
+1. Purpose
+This document defines acceptable use of company IT systems.
+
+2. Rules
+- Do not share passwords.
+- Use MFA where available.
+- Report suspected phishing to the IT team.
+
+3. Incident Handling
+If you suspect an incident, contact the IT Service Desk within 1 hour.

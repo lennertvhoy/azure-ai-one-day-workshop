@@ -1,0 +1,25 @@
+{
+  "name": "policy-index",
+  "fields": [
+    {"name": "id", "type": "Edm.String", "key": true, "filterable": true},
+    {"name": "content", "type": "Edm.String", "searchable": true},
+    {"name": "source", "type": "Edm.String", "filterable": true, "facetable": true},
+    {"name": "title", "type": "Edm.String", "filterable": true, "facetable": true},
+    {"name": "chunk", "type": "Edm.Int32", "filterable": true},
+    {
+      "name": "contentVector",
+      "type": "Collection(Edm.Single)",
+      "searchable": true,
+      "dimensions": 1536,
+      "vectorSearchProfile": "vprofile"
+    }
+  ],
+  "vectorSearch": {
+    "algorithms": [
+      {"name": "hnsw", "kind": "hnsw"}
+    ],
+    "profiles": [
+      {"name": "vprofile", "algorithm": "hnsw"}
+    ]
+  }
+}
