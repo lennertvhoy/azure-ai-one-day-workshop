@@ -21,10 +21,15 @@ Build a GDPR-safe **Python** app that:
 ---
 
 ## Prerequisites
-- Azure subscription permissions (create RG, Web App, Key Vault)
-- Azure OpenAI resource + deployed model (e.g., `gpt-4o-mini` or equivalent)
-- (Optional) Azure AI Document Intelligence resource
-- Local: Python 3.11+, `az` CLI
+Use these internal references as your checklist:
+- **Azure subscription permissions** (create RG, Web App, Key Vault)
+  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+- **Azure OpenAI resource + deployed model** (e.g., `gpt-4o-mini` or equivalent)
+  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+- **(Optional) Azure AI Document Intelligence** resource
+  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+- **Local tooling:** Python 3.11+, Azure CLI (`az`)
+  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
 
 ---
 
