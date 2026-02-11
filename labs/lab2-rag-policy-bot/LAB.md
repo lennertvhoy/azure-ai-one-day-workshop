@@ -225,20 +225,64 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8002/chat" -ContentType "a
 
 ---
 
-## Step 4 — Deploy to Azure Web App (same pattern as Lab 1)
-- Web App with Managed Identity
-- Key Vault Secrets User role
-- App settings using Key Vault references (env var key → Key Vault secret name):
-  - `AZURE_OPENAI_ENDPOINT` → `azure-openai-endpoint`
-  - `AZURE_OPENAI_API_KEY` → `azure-openai-api-key`
-  - `AZURE_OPENAI_DEPLOYMENT` → `azure-openai-deployment`
-  - `EMBEDDINGS_DEPLOYMENT` → `embeddings-deployment`
-  - `SEARCH_ENDPOINT` → `search-endpoint`
-  - `SEARCH_ADMIN_KEY` → `search-admin-key` (for indexing; for runtime prefer query key)
+## Step 4 — Deploy to Azure Web App (PowerShell, reproducible)
+Use a dedicated Lab 2 app so Lab 1 remains untouched.
 
-**Hardening (recommended):**
-- Use a **Query Key** for runtime search calls (least privilege)
-- Keep admin key only for ingestion
+### 4.1 Set variables
+```powershell
+$RG = "rg-aiws-159277257"
+$KV = "kv-aiws-159277257"
+$PLAN = "plan-aiws-159277257"
+$LOCATION = "westeurope"
+$APP2 = "app-aiws-rag-159277257"   # change if name already taken
+```
+
+### 4.2 Create/reuse Web App
+```powershell
+az webapp show -g $RG -n $APP2 --query name -o tsv 2>$null
+if ($LASTEXITCODE -ne 0) {
+  az webapp create -g $RG -p $PLAN -n $APP2 --runtime "PYTHON:3.11"
+}
+```
+
+### 4.3 Enable managed identity + Key Vault access
+```powershell
+$PRINCIPAL_ID = az webapp identity assign -g $RG -n $APP2 --query principalId -o tsv
+$KV_ID = az keyvault show -n $KV --query id -o tsv
+az role assignment create --assignee-object-id $PRINCIPAL_ID --assignee-principal-type ServicePrincipal --role "Key Vault Secrets User" --scope $KV_ID
+```
+
+### 4.4 Configure app settings (Key Vault references)
+```powershell
+az webapp config appsettings set -g $RG -n $APP2 --settings `
+  SCM_DO_BUILD_DURING_DEPLOYMENT=true `
+  WEBSITE_RUN_FROM_PACKAGE=0 `
+  AZURE_OPENAI_API_VERSION=2024-10-21 `
+  SEARCH_INDEX=policy-index `
+  AZURE_OPENAI_ENDPOINT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-endpoint/)" `
+  AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-api-key/)" `
+  AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-deployment/)" `
+  SEARCH_ENDPOINT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-endpoint/)" `
+  SEARCH_ADMIN_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-admin-key/)" `
+  SEARCH_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-admin-key/)"
+```
+
+⏱️ Wait 45 seconds after settings update before deploy.
+
+### 4.5 Deploy Lab 2 app
+```powershell
+Start-Sleep -Seconds 45
+cd C:\Users\lennertvhoy\azure-ai-one-day-workshop\labs\lab2-rag-policy-bot
+az webapp up -g $RG -n $APP2 -l $LOCATION --runtime "PYTHON:3.11"
+```
+
+### 4.6 Validate
+- `https://$APP2.azurewebsites.net/health` should return `{"ok":true}`
+- Open `https://$APP2.azurewebsites.net/docs`
+- Test `POST /chat` with a policy question
+
+**Hardening (recommended after class):**
+- Use a **Query Key** for runtime (`SEARCH_API_KEY`) and keep admin key only for ingestion.
 
 > 📸 **Screenshot suggestion (L2-S05):** App settings or Key Vault references for Search/OpenAI config (mask secret values).
 
