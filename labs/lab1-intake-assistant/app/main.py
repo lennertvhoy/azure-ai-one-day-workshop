@@ -68,34 +68,6 @@ Return JSON with this schema:
 app = FastAPI(title="AI Intake Assistant", version="0.1.0")
 
 
-def heuristic_fallback(text: str) -> dict[str, Any]:
-    t = text.lower()
-
-    doc_type: DocType = "unknown"
-    team: Team = "Unknown"
-    priority: Priority = "medium"
-
-    if "invoice" in t or "eur" in t or "due" in t:
-        doc_type = "invoice"
-        team = "Finance"
-        priority = "medium"
-    elif "incident" in t or "outage" in t or "error" in t:
-        doc_type = "incident_report"
-        team = "IT"
-        priority = "high"
-    elif "policy" in t or "compliance" in t or "privacy" in t:
-        doc_type = "policy"
-        team = "HR"
-        priority = "low"
-
-    return {
-        "doc_type": doc_type,
-        "entities": {},
-        "summary": text[:240],
-        "routing": {"team": team, "priority": priority, "mode": "fallback"},
-    }
-
-
 @app.get("/health")
 def health():
     return {"ok": True}
@@ -103,25 +75,20 @@ def health():
 
 @app.post("/intake", response_model=IntakeResponse)
 def intake(req: IntakeRequest):
+    client = get_aoai_client()
     deployment = get_env("AZURE_OPENAI_DEPLOYMENT")
 
-    try:
-        client = get_aoai_client()
-        resp = client.chat.completions.create(
-            model=deployment,
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": req.text},
-            ],
-        )
+    resp = client.chat.completions.create(
+        model=deployment,
+        temperature=0.2,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": req.text},
+        ],
+    )
 
-        content = resp.choices[0].message.content or "{}"
+    content = resp.choices[0].message.content or "{}"
 
-        # Minimal robustness: try to parse JSON, otherwise return a structured error.
-        parsed = json.loads(content)
-        return IntakeResponse.model_validate(parsed)
-    except Exception:
-        # Classroom resilience mode: if AOAI networking/config fails,
-        # return a deterministic fallback shape so the flow can continue.
-        return IntakeResponse.model_validate(heuristic_fallback(req.text))
+    # Minimal robustness: try to parse JSON, otherwise return a structured error.
+    parsed = json.loads(content)
+    return IntakeResponse.model_validate(parsed)

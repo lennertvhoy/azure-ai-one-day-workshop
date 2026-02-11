@@ -5,6 +5,7 @@ Audience: Belgian technical professionals with **some Azure**.
 ## Start here (choose one path)
 - **Live class delivery (recommended):** `docs/CLASS_FAST_PATH.md`
 - **Self-serve full setup:** `infra/RESOURCE_SETUP.md` + `infra/iac/README.md`
+- **Deterministic Lab 1 reproduction path (Windows):** `docs/REPRODUCIBLE_PATH.md`
 
 ## Course positioning (sales-ready)
 See `docs/COURSE_POSITIONING.md` for headline, value propositions, audience fit, and outcomes.
