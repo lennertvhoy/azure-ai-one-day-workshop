@@ -59,6 +59,11 @@ If instructor already provided Search + Key Vault + app settings baseline:
 ## Step 0 — Create or reuse Azure AI Search
 If using class mode and Search is pre-provisioned, reuse the provided service.
 
+⚠️ Before running commands, open this folder:
+```powershell
+cd C:\Users\lennertvhoy\azure-ai-one-day-workshop\labs\lab2-rag-policy-bot
+```
+
 ### PowerShell (Windows)
 ```powershell
 $LOCATION = "westeurope"
@@ -126,6 +131,13 @@ Create `index.json` (trainer provides) and apply:
 ### PowerShell (Windows)
 ```powershell
 # IMPORTANT: in PowerShell, `curl` maps to Invoke-WebRequest. Use Invoke-RestMethod explicitly.
+# Also make sure you're in labs\lab2-rag-policy-bot (index.json lives here).
+if (-not (Test-Path .\index.json)) { throw "index.json not found. cd into labs\lab2-rag-policy-bot first." }
+
+# Optional auth sanity check (quickly surfaces bad key/service mismatches as 403)
+$checkHeaders = @{ "api-key" = $SEARCH_ADMIN_KEY }
+Invoke-RestMethod -Method Get -Uri "$SEARCH_ENDPOINT/indexes?api-version=2023-11-01" -Headers $checkHeaders | Out-Null
+
 $indexJson = Get-Content .\index.json -Raw
 $headers = @{
   "Content-Type" = "application/json"
