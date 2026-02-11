@@ -207,6 +207,8 @@ $env:AZURE_OPENAI_DEPLOYMENT = az keyvault secret show --vault-name $KV -n azure
 # Search env vars
 $env:SEARCH_ENDPOINT = az keyvault secret show --vault-name $KV -n search-endpoint --query value -o tsv
 $env:SEARCH_ADMIN_KEY = az keyvault secret show --vault-name $KV -n search-admin-key --query value -o tsv
+# Runtime prefers SEARCH_API_KEY; for workshop speed we mirror admin key.
+$env:SEARCH_API_KEY = $env:SEARCH_ADMIN_KEY
 $env:SEARCH_INDEX = "policy-index"
 
 uvicorn app.main:app --reload --port 8002

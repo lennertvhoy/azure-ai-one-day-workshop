@@ -14,7 +14,10 @@ def get_env(name: str) -> str:
 
 def get_search_client(index_name: str) -> SearchClient:
     endpoint = get_env("SEARCH_ENDPOINT")
-    key = get_env("SEARCH_API_KEY")  # use query key for runtime, admin key for ingestion
+    # Prefer query key for runtime; allow admin key fallback for workshop/dev speed.
+    key = os.getenv("SEARCH_API_KEY") or os.getenv("SEARCH_ADMIN_KEY")
+    if not key:
+        raise RuntimeError("Missing environment variable: SEARCH_API_KEY (or SEARCH_ADMIN_KEY fallback)")
     return SearchClient(endpoint=endpoint, index_name=index_name, credential=AzureKeyCredential(key))
 
 
