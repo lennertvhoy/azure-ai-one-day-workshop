@@ -47,6 +47,8 @@ az group create -n $RG -l $LOCATION
 
 **Checkpoint:** `az group show -n $RG` works.
 
+> 📸 **Screenshot suggestion (L1-S01):** Azure Portal showing the new Resource Group overview (`$RG`) with region visible.
+
 ---
 
 ## Step 1 — Create Key Vault (secrets live here)
@@ -72,6 +74,8 @@ az keyvault secret set --vault-name $KV -n AZURE_OPENAI_DEPLOYMENT --value "<dep
 ```bash
 az keyvault secret show --vault-name $KV -n AZURE_OPENAI_DEPLOYMENT --query value -o tsv
 ```
+
+> 📸 **Screenshot suggestion (L1-S02):** Key Vault Secrets list showing required secret names (mask values).
 
 ---
 
@@ -105,6 +109,8 @@ Create `app/main.py`:
 
 **Checkpoint:** `curl` returns valid JSON.
 
+> 📸 **Screenshot suggestion (L1-S03):** Terminal output with a successful `POST /intake` response showing valid JSON.
+
 ---
 
 ## Step 3 — (Optional) Document Intelligence extraction
@@ -115,6 +121,8 @@ If available:
 
 If not available:
 - Use a plain `.txt` sample or a pasted text snippet
+
+> 📸 **Screenshot suggestion (L1-S04):** Document extraction output preview (raw extracted text or extracted fields), with any sensitive content removed.
 
 ---
 
@@ -142,6 +150,8 @@ az role assignment create --assignee-object-id $MI_PRINCIPAL_ID \
 
 **Checkpoint:** role assignment exists.
 
+> 📸 **Screenshot suggestion (L1-S05):** Web App Identity page + RBAC assignment (`Key Vault Secrets User`) confirmation.
+
 ---
 
 ## Step 5 — Configure Key Vault references in App Settings
@@ -156,6 +166,8 @@ az webapp config appsettings set -g $RG -n $APP --settings \
 
 **Checkpoint:** In Azure Portal → Web App → Configuration, values show as Key Vault references (not plain text).
 
+> 📸 **Screenshot suggestion (L1-S06):** Web App Configuration page showing Key Vault reference format for app settings.
+
 ---
 
 ## Step 6 — Deploy code
@@ -169,6 +181,8 @@ az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON|3.11"
 ```
 
 **Checkpoint:** `https://$APP.azurewebsites.net/docs` loads (if FastAPI).
+
+> 📸 **Screenshot suggestion (L1-S07):** Live `/docs` Swagger page for deployed app.
 
 ---
 

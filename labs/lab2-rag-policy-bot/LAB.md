@@ -46,6 +46,8 @@ az keyvault secret set --vault-name $KV -n SEARCH_ADMIN_KEY --value "$SEARCH_ADM
 
 **Checkpoint:** Search service exists in portal.
 
+> 📸 **Screenshot suggestion (L2-S01):** Azure AI Search service overview page (name, region, pricing tier visible).
+
 ---
 
 ## Step 1 — Create an index schema (vector + metadata)
@@ -67,6 +69,8 @@ curl -X PUT "$SEARCH_ENDPOINT/indexes/policy-index?api-version=2023-11-01" \
 
 **Checkpoint:** index appears in Azure AI Search.
 
+> 📸 **Screenshot suggestion (L2-S02):** Index list/detail showing `policy-index` fields, including vector field.
+
 ---
 
 ## Step 2 — Build ingestion pipeline
@@ -82,6 +86,8 @@ Ingestion steps:
 4) upload docs to AI Search
 
 **Checkpoint:** at least 50 chunks indexed.
+
+> 📸 **Screenshot suggestion (L2-S03):** Ingestion run output with chunk count and successful upload summary.
 
 ---
 
@@ -100,6 +106,8 @@ Behavior requirements:
 
 **Checkpoint:** 5-question eval set passes with citations.
 
+> 📸 **Screenshot suggestion (L2-S04):** Chat response example showing grounded answer + citation format `[source#chunk]`.
+
 ---
 
 ## Step 4 — Deploy to Azure Web App (same pattern as Lab 1)
@@ -117,6 +125,8 @@ Behavior requirements:
 - Use a **Query Key** for runtime search calls (least privilege)
 - Keep admin key only for ingestion
 
+> 📸 **Screenshot suggestion (L2-S05):** App settings or Key Vault references for Search/OpenAI config (mask secret values).
+
 ---
 
 ## Step 5 — Prompt injection demo (controlled)
@@ -128,6 +138,8 @@ Expected outcome:
 - Model should still follow system instruction to cite sources and answer only from docs
 
 **Checkpoint:** participants see why system prompts + retrieval boundaries matter.
+
+> 📸 **Screenshot suggestion (L2-S06):** Prompt-injection test question + safe model response refusing malicious instruction.
 
 ---
 
