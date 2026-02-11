@@ -1,5 +1,7 @@
 # Lab 2 — RAG Policy Bot with Citations (Azure AI Search)
 
+> Running this as a live class? Start with `docs/CLASS_FAST_PATH.md` and use this file as supporting detail.
+
 ## Goal
 Build a GDPR-safe **RAG** app that:
 1) ingests a set of policy/SOP documents

@@ -1,5 +1,7 @@
 # Lab 1 — AI Intake Assistant (Document → JSON → Workflow)
 
+> Running this as a live class? Start with `docs/CLASS_FAST_PATH.md` and use this file as supporting detail.
+
 ## Goal
 Build a GDPR-safe **Python** app that:
 1) extracts text/fields from a document (invoice / report)
