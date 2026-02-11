@@ -50,6 +50,17 @@ Pick a region (recommend **westeurope**).
 
 > **Class mode:** If instructor already provided `$RG`, reuse it and skip RG creation.
 
+### PowerShell (Windows)
+```powershell
+az login
+az account show
+
+$LOCATION = "westeurope"
+if (-not $RG) { $RG = "rg-azure-ai-workshop-$(Get-Random)" }
+az group create -n $RG -l $LOCATION
+```
+
+### Bash (WSL/macOS/Linux)
 ```bash
 az login
 az account show
