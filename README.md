@@ -8,6 +8,7 @@ Audience: Belgian technical professionals with **some Azure**.
 - `labs/lab1-intake-assistant/LAB.md` — Lab 1 manual (Document → JSON → workflow)
 - `labs/lab2-rag-policy-bot/LAB.md` — Lab 2 manual (RAG bot with citations)
 - `infra/` — infra notes + az cli snippets
+- `infra/iac/` — participant environment IaC starter (deploy + cleanup scripts)
 
 ## Guardrails (GDPR-safe)
 - Use **sample documents** only (no PII)
