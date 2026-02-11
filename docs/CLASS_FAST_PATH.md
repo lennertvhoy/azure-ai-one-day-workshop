@@ -20,6 +20,10 @@ Do this once per participant (or per team):
 
 ## Student in-class flow (copy/paste, PowerShell)
 
+Decision for live class:
+- Default = **cloud-first functional path** (fastest, least confusion).
+- Local run is only a smoke test unless instructor explicitly enables full local mode.
+
 ### 0) Login + confirm provided variables
 ```powershell
 az login

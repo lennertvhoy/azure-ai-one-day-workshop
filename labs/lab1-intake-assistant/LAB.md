@@ -131,14 +131,31 @@ python -m pip install -U pip
 python -m pip install -r ./labs/lab1-intake-assistant/requirements.txt
 ```
 
-### Minimal API contract
-We want an endpoint:
-- `POST /intake` with a text payload (we start with text to keep it moving)
-- returns JSON with fields and a summary
+### What to do after install (pick one track)
 
-Create `app/main.py`:
-- load secrets from environment for local
-- call Azure OpenAI with a strict JSON schema instruction
+#### Track A — **Class default (recommended): smoke test only**
+Goal: verify app starts locally without spending time on local cloud auth.
+
+```powershell
+cd .\labs\lab1-intake-assistant
+python -m uvicorn app.main:app --reload
+```
+
+Open `http://127.0.0.1:8000/docs` and confirm docs load.
+Then stop (`Ctrl+C`) and continue to **Step 5** and **Step 6** for full cloud functionality.
+
+#### Track B — **Optional full local functionality**
+Goal: make `POST /intake` work locally before deployment.
+
+1) Create local env file using:
+- `labs/lab1-intake-assistant/app/ENV_EXAMPLE.md` (copy values into `labs/lab1-intake-assistant/app/.env`)
+
+2) Fill values in `.env`:
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_DEPLOYMENT`
+
+3) Run app and test `POST /intake` from `/docs`.
 
 **Prompt contract (example JSON):**
 ```json
@@ -150,13 +167,17 @@ Create `app/main.py`:
 }
 ```
 
-**Checkpoint:** `curl` returns valid JSON.
+**Checkpoint options:**
+- Track A: `/docs` loads locally
+- Track B: `POST /intake` returns valid JSON
 
-> 📸 **Screenshot suggestion (L1-S03):** Terminal output with a successful `POST /intake` response showing valid JSON.
+> 📸 **Screenshot suggestion (L1-S03):** Terminal output with app running and (if Track B) successful `POST /intake` JSON response.
 
 ---
 
 ## Step 3 — (Optional) Document Intelligence extraction
+> Class default: skip this in first pass; return after deployed flow works.
+
 If available:
 - Upload a sample PDF/image
 - Extract text and/or key fields

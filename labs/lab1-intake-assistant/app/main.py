@@ -5,6 +5,9 @@ from typing import Any, Literal
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from openai import AzureOpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def get_env(name: str) -> str:
