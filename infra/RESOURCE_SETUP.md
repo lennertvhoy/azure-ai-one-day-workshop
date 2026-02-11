@@ -15,6 +15,7 @@ If you want complete setup knowledge, use all three in this order:
 Important naming note:
 - Key Vault secret names must use only letters/numbers/dashes (no underscores).
 - App setting keys can still use underscores (e.g. `AZURE_OPENAI_ENDPOINT`).
+- Example: `DOCINTEL_ENDPOINT` (env var) maps to `docintel-endpoint` (Key Vault secret name).
 
 ---
 
@@ -269,6 +270,17 @@ az role assignment create \
 - Role: `Cognitive Services OpenAI User` on AOAI resource
 
 ---
+
+## Common gotchas (quick fixes)
+- **`BadParameter ... invalid name` when setting Key Vault secret**
+  - Cause: underscores in secret name.
+  - Fix: use dash names (`azure-openai-endpoint`, `docintel-endpoint`, etc.).
+- **`ForbiddenByRbac` when setting Key Vault secret**
+  - Cause: missing RBAC role on Key Vault.
+  - Fix: assign `Key Vault Secrets Officer` (or equivalent) and wait for propagation.
+- **AOAI deployment SKU/model not supported in region**
+  - Cause: regional model/SKU availability differences.
+  - Fix: use Portal/Foundry deployment fallback and keep deployment name aligned in variables.
 
 ## Recommended for paid course operations
 - Prefer **IaC** for cohorts: `infra/iac/README.md`
