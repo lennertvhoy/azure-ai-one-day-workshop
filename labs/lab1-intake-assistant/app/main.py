@@ -11,6 +11,7 @@ load_dotenv()
 
 
 def get_env(name: str) -> str:
+    """Read required env var or stop early with a clear setup error."""
     v = os.getenv(name)
     if not v:
         raise RuntimeError(f"Missing environment variable: {name}")
@@ -75,9 +76,17 @@ def health():
 
 @app.post("/intake", response_model=IntakeResponse)
 def intake(req: IntakeRequest):
+    """Core intake endpoint used in the workshop.
+
+    Flow:
+    1) receive raw document text
+    2) call Azure OpenAI with strict JSON prompt
+    3) validate JSON against IntakeResponse schema
+    """
     client = get_aoai_client()
     deployment = get_env("AZURE_OPENAI_DEPLOYMENT")
 
+    # Keep temperature low for more stable/consistent structured outputs.
     resp = client.chat.completions.create(
         model=deployment,
         temperature=0.2,
@@ -89,6 +98,8 @@ def intake(req: IntakeRequest):
 
     content = resp.choices[0].message.content or "{}"
 
-    # Minimal robustness: try to parse JSON, otherwise return a structured error.
+    # Parse model JSON output.
     parsed = json.loads(content)
+
+    # Enforce schema so downstream automation receives predictable fields.
     return IntakeResponse.model_validate(parsed)
