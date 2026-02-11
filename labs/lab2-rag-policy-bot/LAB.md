@@ -71,8 +71,10 @@ az search service create -g $RG -n $SEARCH -l $LOCATION --sku basic
 
 Get admin key (for indexing; later we restrict):
 ```powershell
-$SEARCH_ADMIN_KEY = az search admin-key show -g $RG -n $SEARCH --query primaryKey -o tsv
+$SEARCH_ADMIN_KEY = az search admin-key show --resource-group $RG --service-name $SEARCH --query primaryKey -o tsv
 $SEARCH_ENDPOINT = "https://$SEARCH.search.windows.net"
+
+if (-not $SEARCH_ADMIN_KEY) { throw "SEARCH_ADMIN_KEY is empty. Check service name and permissions." }
 ```
 
 Store in Key Vault:
@@ -120,6 +122,19 @@ Design fields:
 - `chunk`
 
 Create `index.json` (trainer provides) and apply:
+
+### PowerShell (Windows)
+```powershell
+# IMPORTANT: in PowerShell, `curl` maps to Invoke-WebRequest. Use Invoke-RestMethod explicitly.
+$indexJson = Get-Content .\index.json -Raw
+$headers = @{
+  "Content-Type" = "application/json"
+  "api-key" = $SEARCH_ADMIN_KEY
+}
+Invoke-RestMethod -Method Put -Uri "$SEARCH_ENDPOINT/indexes/policy-index?api-version=2023-11-01" -Headers $headers -Body $indexJson
+```
+
+### Bash (WSL/macOS/Linux)
 ```bash
 curl -X PUT "$SEARCH_ENDPOINT/indexes/policy-index?api-version=2023-11-01" \
   -H "Content-Type: application/json" \
