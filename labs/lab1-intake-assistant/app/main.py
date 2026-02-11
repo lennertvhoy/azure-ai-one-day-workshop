@@ -20,10 +20,14 @@ def get_env(name: str) -> str:
 def get_aoai_client() -> AzureOpenAI:
     # For class speed we use API key auth (stored in Key Vault in Azure).
     # If your org supports Entra ID auth for Azure OpenAI, swap this for DefaultAzureCredential.
+    endpoint = get_env("AZURE_OPENAI_ENDPOINT").strip().strip('"').strip("'")
+    if not endpoint.startswith(("http://", "https://")):
+        endpoint = f"https://{endpoint}"
+
     return AzureOpenAI(
-        api_key=get_env("AZURE_OPENAI_API_KEY"),
+        api_key=get_env("AZURE_OPENAI_API_KEY").strip(),
         api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21"),
-        azure_endpoint=get_env("AZURE_OPENAI_ENDPOINT"),
+        azure_endpoint=endpoint,
     )
 
 
