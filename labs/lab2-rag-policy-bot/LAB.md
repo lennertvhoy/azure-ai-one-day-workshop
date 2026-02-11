@@ -59,6 +59,30 @@ If instructor already provided Search + Key Vault + app settings baseline:
 ## Step 0 — Create or reuse Azure AI Search
 If using class mode and Search is pre-provisioned, reuse the provided service.
 
+### PowerShell (Windows)
+```powershell
+$LOCATION = "westeurope"
+# Reuse existing values if already set:
+# $RG = "<your-rg>"
+if (-not $SEARCH) { $SEARCH = "srch-aiws-$(Get-Random)" }
+
+az search service create -g $RG -n $SEARCH -l $LOCATION --sku basic
+```
+
+Get admin key (for indexing; later we restrict):
+```powershell
+$SEARCH_ADMIN_KEY = az search admin-key show -g $RG -n $SEARCH --query primaryKey -o tsv
+$SEARCH_ENDPOINT = "https://$SEARCH.search.windows.net"
+```
+
+Store in Key Vault:
+```powershell
+# $KV = "<your-kv>"
+az keyvault secret set --vault-name $KV -n search-endpoint --value "$SEARCH_ENDPOINT"
+az keyvault secret set --vault-name $KV -n search-admin-key --value "$SEARCH_ADMIN_KEY"
+```
+
+### Bash (WSL/macOS/Linux)
 ```bash
 export LOCATION=westeurope
 export RG=<your-rg>
