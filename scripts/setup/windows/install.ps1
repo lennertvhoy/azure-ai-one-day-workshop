@@ -47,9 +47,23 @@ function Ensure-AzOnPath {
   }
 }
 
+function Test-PythonCommand {
+  param([Parameter(Mandatory=$true)][string]$Mode)
+  try {
+    if ($Mode -eq "python") {
+      & python -c "import sys; print(sys.version_info.major)" *> $null
+    } else {
+      & py -3.11 -c "import sys; print(sys.version_info.major)" *> $null
+    }
+    return ($LASTEXITCODE -eq 0)
+  } catch {
+    return $false
+  }
+}
+
 function Get-PythonMode {
-  if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
-  if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
+  if ((Get-Command python -ErrorAction SilentlyContinue) -and (Test-PythonCommand -Mode "python")) { return "python" }
+  if ((Get-Command py -ErrorAction SilentlyContinue) -and (Test-PythonCommand -Mode "py")) { return "py" }
   return $null
 }
 
@@ -127,7 +141,7 @@ if (-not $SkipAzureLogin) {
   if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     Write-Warn "az command not available in this shell yet. Open a new shell, run az login, then verify script."
   } else {
-    az account show --output none *> $null
+    cmd /c "az account show --output none >nul 2>nul"
     if ($LASTEXITCODE -ne 0) {
       Write-Host "No active Azure session. Running: az login"
       az login

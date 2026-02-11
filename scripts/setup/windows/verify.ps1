@@ -26,9 +26,23 @@ function Ensure-AzOnPath {
   }
 }
 
+function Test-PythonCommand {
+  param([Parameter(Mandatory=$true)][string]$Mode)
+  try {
+    if ($Mode -eq "python") {
+      & python -c "import sys; print(sys.version_info.major)" *> $null
+    } else {
+      & py -3.11 -c "import sys; print(sys.version_info.major)" *> $null
+    }
+    return ($LASTEXITCODE -eq 0)
+  } catch {
+    return $false
+  }
+}
+
 function Get-PythonMode {
-  if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
-  if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
+  if ((Get-Command python -ErrorAction SilentlyContinue) -and (Test-PythonCommand -Mode "python")) { return "python" }
+  if ((Get-Command py -ErrorAction SilentlyContinue) -and (Test-PythonCommand -Mode "py")) { return "py" }
   return $null
 }
 
@@ -75,7 +89,7 @@ Check "Azure CLI available" {
 Check "Azure login" {
   Ensure-AzOnPath
   if (-not (Get-Command az -ErrorAction SilentlyContinue)) { throw "az not found" }
-  az account show --output none *> $null
+  cmd /c "az account show --output none >nul 2>nul"
   if ($LASTEXITCODE -ne 0) {
     if ($StrictAzureLogin) { throw "Not logged in (run az login)" }
     else { throw "Not logged in yet (run az login before labs)" }
