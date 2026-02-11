@@ -21,12 +21,16 @@ def get_search_client(index_name: str) -> SearchClient:
     return SearchClient(endpoint=endpoint, index_name=index_name, credential=AzureKeyCredential(key))
 
 
-def search_top_k(index_name: str, query: str, top: int = 5) -> list[dict[str, Any]]:
+def search_top_k(index_name: str, query: str, top: int = 5, min_score: float = 0.0) -> list[dict[str, Any]]:
+    """Retrieve top documents and optionally filter weak matches by score."""
     client = get_search_client(index_name)
     results = client.search(search_text=query, top=top, query_type="simple")
     hits: list[dict[str, Any]] = []
     for r in results:
-        hits.append(dict(r))
+        row = dict(r)
+        score = float(row.get("@search.score", 0.0) or 0.0)
+        if score >= min_score:
+            hits.append(row)
     return hits
 
 

@@ -67,12 +67,20 @@ def extract_text(filename: str, content: bytes) -> str:
 
 
 def intake_via_lab1(text: str) -> dict[str, Any]:
+    """Call Lab1 for classification. If not configured, return explicit fallback metadata."""
     lab1_url = os.getenv("LAB1_URL")
     if not lab1_url:
-        return {"doc_type": "unknown", "routing": {"team": "Unknown", "priority": "medium"}}
+        return {
+            "doc_type": "unknown",
+            "routing": {"team": "Unknown", "priority": "medium"},
+            "_intake_mode": "local-fallback",
+            "_reason": "LAB1_URL not configured",
+        }
     r = requests.post(f"{lab1_url.rstrip('/')}/intake", json={"text": text}, timeout=60)
     r.raise_for_status()
-    return r.json()
+    out = r.json()
+    out["_intake_mode"] = "lab1-api"
+    return out
 
 
 class ChatRequest(BaseModel):
@@ -176,7 +184,12 @@ async def upload(files: list[UploadFile] = File(...)):
     for f in files:
         raw = await f.read()
         try:
-            text = extract_text(f.filename or "unknown", raw)
+            filename = f.filename or "unknown"
+            if filename.lower() == "readme.md":
+                results.append({"file": filename, "status": "skipped", "reason": "demo hygiene: readme is usually noise"})
+                continue
+
+            text = extract_text(filename, raw)
             intake = intake_via_lab1(text)
             doc_type = str(intake.get("doc_type", "unknown"))
 
@@ -186,12 +199,20 @@ async def upload(files: list[UploadFile] = File(...)):
                     {
                         "id": str(uuid.uuid4()),
                         "content": ch,
-                        "source": f.filename or "unknown",
+                        "source": filename,
                         "title": doc_type,
                         "chunk": i,
                     }
                 )
-            results.append({"file": f.filename, "status": "ok", "chunks": len(chunks), "doc_type": doc_type})
+            results.append(
+                {
+                    "file": filename,
+                    "status": "ok",
+                    "chunks": len(chunks),
+                    "doc_type": doc_type,
+                    "intake_mode": intake.get("_intake_mode", "unknown"),
+                }
+            )
         except Exception as e:
             results.append({"file": f.filename, "status": "error", "error": str(e)})
 
@@ -211,13 +232,21 @@ def chat(req: ChatRequest):
     """RAG chat endpoint: retrieve relevant chunks, then generate grounded answer."""
     index_name = os.getenv("SEARCH_INDEX", "policy-index")
     top_k = int(os.getenv("SEARCH_TOP_K", "5"))
+    min_score = float(os.getenv("SEARCH_MIN_SCORE", "0.3"))
 
-    hits = search_top_k(index_name=index_name, query=req.question, top=top_k)
+    hits = search_top_k(index_name=index_name, query=req.question, top=top_k, min_score=min_score)
+
+    if not hits:
+        return ChatResponse(
+            answer="I don't know based on the provided documents.",
+            citations=[],
+            debug={"hits": 0, "min_score": min_score},
+        )
 
     sources_lines: list[str] = []
     citations: list[Citation] = []
 
-    for h in hits:
+    for h in hits[:3]:
         src = str(h.get("source") or "unknown")
         chunk = h.get("chunk")
         content = str(h.get("content") or "")

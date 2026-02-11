@@ -151,5 +151,6 @@ streamlit run app.py
 ## Troubleshooting quick hits
 - `AuthorizationFailed roleAssignments/write`: use Step 4.4B fallback and continue.
 - `Missing SEARCH_API_KEY`: set `$env:SEARCH_API_KEY = $env:SEARCH_ADMIN_KEY`.
+- Bulk upload shows `doc_type: unknown` for all files: set `LAB1_URL` in Lab2 app settings so upload calls Lab1 intake.
 - PowerShell `-H` / `-d @index.json` errors: wrong shell syntax; use `Invoke-RestMethod`.
 - "Hey, Python developers" page: startup command missing; set startup file and restart app.

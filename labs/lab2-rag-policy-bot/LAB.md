@@ -282,7 +282,9 @@ az webapp config appsettings set -g $RG -n $APP2 --settings `
   AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-deployment/)" `
   SEARCH_ENDPOINT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-endpoint/)" `
   SEARCH_ADMIN_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-admin-key/)" `
-  SEARCH_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-admin-key/)"
+  SEARCH_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-admin-key/)" `
+  LAB1_URL="https://$APP.azurewebsites.net" `
+  SEARCH_MIN_SCORE=0.3
 ```
 
 ### 4.4B Fallback when IAM role assignment is blocked (classroom unblock)
@@ -299,6 +301,8 @@ az webapp config appsettings set -g $RG -n $APP2 --settings `
   WEBSITE_RUN_FROM_PACKAGE=0 `
   AZURE_OPENAI_API_VERSION=2024-10-21 `
   SEARCH_INDEX=policy-index `
+  LAB1_URL="https://$APP.azurewebsites.net" `
+  SEARCH_MIN_SCORE=0.3 `
   AZURE_OPENAI_ENDPOINT="$AOAI_ENDPOINT" `
   AZURE_OPENAI_API_KEY="$AOAI_KEY" `
   AZURE_OPENAI_DEPLOYMENT="$AOAI_DEPLOYMENT" `
