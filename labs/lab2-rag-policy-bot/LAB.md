@@ -252,7 +252,9 @@ $KV_ID = az keyvault show -n $KV --query id -o tsv
 az role assignment create --assignee-object-id $PRINCIPAL_ID --assignee-principal-type ServicePrincipal --role "Key Vault Secrets User" --scope $KV_ID
 ```
 
-### 4.4 Configure app settings (Key Vault references)
+If you get `AuthorizationFailed` on role assignment (no IAM rights), use the fallback below.
+
+### 4.4A Configure app settings (preferred: Key Vault references)
 ```powershell
 az webapp config appsettings set -g $RG -n $APP2 --settings `
   SCM_DO_BUILD_DURING_DEPLOYMENT=true `
@@ -266,6 +268,30 @@ az webapp config appsettings set -g $RG -n $APP2 --settings `
   SEARCH_ADMIN_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-admin-key/)" `
   SEARCH_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/search-admin-key/)"
 ```
+
+### 4.4B Fallback when IAM role assignment is blocked (classroom unblock)
+```powershell
+# Pull secret values as current user and set plain app settings directly.
+$AOAI_ENDPOINT = az keyvault secret show --vault-name $KV -n azure-openai-endpoint --query value -o tsv
+$AOAI_KEY = az keyvault secret show --vault-name $KV -n azure-openai-api-key --query value -o tsv
+$AOAI_DEPLOYMENT = az keyvault secret show --vault-name $KV -n azure-openai-deployment --query value -o tsv
+$SEARCH_ENDPOINT = az keyvault secret show --vault-name $KV -n search-endpoint --query value -o tsv
+$SEARCH_ADMIN_KEY = az keyvault secret show --vault-name $KV -n search-admin-key --query value -o tsv
+
+az webapp config appsettings set -g $RG -n $APP2 --settings `
+  SCM_DO_BUILD_DURING_DEPLOYMENT=true `
+  WEBSITE_RUN_FROM_PACKAGE=0 `
+  AZURE_OPENAI_API_VERSION=2024-10-21 `
+  SEARCH_INDEX=policy-index `
+  AZURE_OPENAI_ENDPOINT="$AOAI_ENDPOINT" `
+  AZURE_OPENAI_API_KEY="$AOAI_KEY" `
+  AZURE_OPENAI_DEPLOYMENT="$AOAI_DEPLOYMENT" `
+  SEARCH_ENDPOINT="$SEARCH_ENDPOINT" `
+  SEARCH_ADMIN_KEY="$SEARCH_ADMIN_KEY" `
+  SEARCH_API_KEY="$SEARCH_ADMIN_KEY"
+```
+
+> Note: fallback is acceptable for workshop speed; move back to Key Vault references after RBAC is fixed.
 
 ⏱️ Wait 45 seconds after settings update before deploy.
 
