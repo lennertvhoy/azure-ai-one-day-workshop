@@ -45,6 +45,16 @@ Participants set up everything end-to-end themselves using:
 
 This keeps class fast while preserving full reproducibility afterward.
 
+### Class mode quick navigation (important)
+If instructor already gave you `$RG`, `$KV`, `$APP` and AOAI secrets in Key Vault:
+- Step 0: **Access check only** (skip RG create)
+- Step 1: **Skip** (KV/secrets already done)
+- Step 2: Run **Track A** (local smoke) or **Track B** (full local) 
+- Step 3: **Skip for first pass**
+- Step 4: **Skip** (Web App already exists)
+- Step 5: **Do this** (wire app settings to Key Vault)
+- Step 6: **Do this** (deploy app code)
+
 ---
 
 ## Step 0 — Access check + resource group
@@ -79,8 +89,17 @@ az group create -n $RG -l $LOCATION
 ---
 
 ## Step 1 — Create Key Vault (secrets live here)
+> Class mode: skip if instructor already provided `$KV` and the required secrets.
+
+### PowerShell (Windows)
+```powershell
+if (-not $KV) { $KV = "kv-aiws-$(Get-Random)" }
+az keyvault create -g $RG -n $KV -l $LOCATION
+```
+
+### Bash (WSL/macOS/Linux)
 ```bash
-export KV=kv-aiws-$RANDOM
+export KV=${KV:-kv-aiws-$RANDOM}
 az keyvault create -g $RG -n $KV -l $LOCATION
 ```
 
@@ -91,7 +110,7 @@ Add secrets (names are examples):
 - (Optional) `docintel-endpoint`
 - (Optional) `docintel-api-key`
 
-```bash
+```powershell
 az keyvault secret set --vault-name $KV -n azure-openai-endpoint --value "https://<your-aoai>.openai.azure.com/"
 az keyvault secret set --vault-name $KV -n azure-openai-api-key --value "<key>"
 az keyvault secret set --vault-name $KV -n azure-openai-deployment --value "<deployment-name>"
@@ -191,8 +210,18 @@ If not available:
 ---
 
 ## Step 4 — Create Azure Web App (Linux)
+> Class mode: skip if instructor already provided `$APP` and App Service plan.
+
+### PowerShell (Windows)
+```powershell
+if (-not $APP) { $APP = "app-aiws-intake-$(Get-Random)" }
+az appservice plan create -g $RG -n plan-aiws --is-linux --sku B1
+az webapp create -g $RG -p plan-aiws -n $APP --runtime "PYTHON:3.11"
+```
+
+### Bash (WSL/macOS/Linux)
 ```bash
-export APP=app-aiws-intake-$RANDOM
+export APP=${APP:-app-aiws-intake-$RANDOM}
 az appservice plan create -g $RG -n plan-aiws --is-linux --sku B1
 az webapp create -g $RG -p plan-aiws -n $APP --runtime "PYTHON|3.11"
 ```
@@ -223,11 +252,11 @@ Set settings to Key Vault references (App Service supports `@Microsoft.KeyVault(
 
 > If you just finished `infra/RESOURCE_SETUP.md` Phase 5, this is your immediate next step.
 
-Example:
-```bash
-az webapp config appsettings set -g $RG -n $APP --settings \
-  AZURE_OPENAI_ENDPOINT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-endpoint/)" \
-  AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-api-key/)" \
+Example (PowerShell):
+```powershell
+az webapp config appsettings set -g $RG -n $APP --settings `
+  AZURE_OPENAI_ENDPOINT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-endpoint/)" `
+  AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-api-key/)" `
   AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-deployment/)"
 ```
 
@@ -243,6 +272,13 @@ You can deploy via:
 - GitHub Actions (more enterprise)
 
 For class speed, use:
+
+### PowerShell (Windows)
+```powershell
+az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON:3.11"
+```
+
+### Bash (WSL/macOS/Linux)
 ```bash
 az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON|3.11"
 ```

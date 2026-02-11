@@ -39,6 +39,15 @@ Participants create all dependencies themselves via:
 - [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
 - [`infra/iac/README.md`](../../infra/iac/README.md)
 
+### Class mode quick navigation (important)
+If instructor already provided Search + Key Vault + app settings baseline:
+- Step 0: **Reuse** Search service (skip create)
+- Step 1: **Do** index creation
+- Step 2: **Do** ingestion
+- Step 3: **Do** chat endpoint and tests
+- Step 4: **Do** app setting wiring/deploy tweaks
+- Step 5: **Do** prompt injection demo
+
 ---
 
 ## Step 0 — Create or reuse Azure AI Search

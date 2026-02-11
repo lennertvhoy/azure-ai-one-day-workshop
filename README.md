@@ -2,6 +2,10 @@
 
 Audience: Belgian technical professionals with **some Azure**.
 
+## Start here (choose one path)
+- **Live class delivery (recommended):** `docs/CLASS_FAST_PATH.md`
+- **Self-serve full setup:** `infra/RESOURCE_SETUP.md` + `infra/iac/README.md`
+
 ## Package contents
 - `docs/DAY_PLAN.md` — minute-by-minute schedule + learning objectives
 - `docs/TRAINER_NOTES.md` — facilitation notes, checkpoints, recovery plans
