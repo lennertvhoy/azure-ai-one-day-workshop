@@ -19,6 +19,16 @@ Audience: Belgian technical professionals with **some Azure**.
 - `infra/` — infra notes + az cli snippets
 - `infra/iac/` — participant environment IaC starter (deploy + cleanup scripts)
 
+## What this project does (30 seconds)
+You build two connected Azure AI patterns:
+1) **Lab 1 — Intake Assistant:** turns messy document text into structured JSON (`doc_type`, `entities`, `summary`, `routing`) so it can drive workflows.
+2) **Lab 2 — RAG Policy Bot:** answers questions over internal docs with citations.
+
+How they connect:
+- Lab 1 produces structured outputs and operational context.
+- Lab 2 provides grounded Q&A over policy/knowledge documents.
+- Together they form an intake + decision-support pipeline.
+
 ## Guardrails (GDPR-safe)
 - Use **sample documents** only (no PII)
 - Use **Key Vault** for secrets

@@ -9,6 +9,12 @@ Build a GDPR-safe **RAG** app that:
 3) exposes a chat endpoint that answers with **citations**
 4) deploys to **Azure Web App** with **Managed Identity + Key Vault**
 
+### How Lab 2 relates to Lab 1
+Lab 1 handles **intake normalization** (operational document processing).
+Lab 2 handles **knowledge-grounded Q&A** (decision support with citations).
+
+In real systems, these are complementary: intake events from Lab 1 often trigger policy checks or assistant support patterns from Lab 2.
+
 ## Timebox
 ~2 hours build + 30 minutes hardening
 

@@ -9,6 +9,16 @@ Build a GDPR-safe **Python** app that:
 3) stores output and exposes results via a simple web UI
 4) deploys to **Azure Web App** using **Managed Identity + Key Vault**
 
+### What this app is for (plain language)
+This is an **intake triage API**:
+- Input: messy document text
+- Output: predictable JSON your automation can use
+
+Typical uses:
+- route invoices to Finance
+- route incidents to IT with priority
+- create normalized records before downstream processing
+
 ## Timebox
 - Build (local): ~90 minutes
 - Deploy to Web App: ~45 minutes
