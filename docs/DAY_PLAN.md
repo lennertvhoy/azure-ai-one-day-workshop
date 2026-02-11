@@ -17,6 +17,11 @@ Participants can:
 ## 09:00–09:30 — Kickoff + setup
 - Objectives, expectations, “what you ship today”
 - GDPR-safe rules: no PII, sample docs only
+- Fresh VM bootstrap flow (participants do this themselves):
+  - Install Git with winget
+  - Clone repo
+  - Run `scripts/setup/setup-all.ps1` and choose **Windows native**
+  - Run verify step
 - Prereqs checklist:
   - Azure subscription access + permission to create resources
   - Azure CLI installed + logged in

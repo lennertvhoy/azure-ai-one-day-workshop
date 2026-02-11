@@ -15,6 +15,21 @@ Audience: Belgian technical professionals with **some Azure**.
 - Prefer **Managed Identity** from Azure Web App
 - Log safely (no prompts with secrets/PII)
 
+## Participant quickstart (fresh Windows VM)
+Use this flow for each participant machine:
+
+1. **Install Git (winget):**
+   - Open PowerShell **as Administrator**
+   - Run: `winget install --id Git.Git --exact --silent --accept-source-agreements --accept-package-agreements`
+2. **Clone repo:**
+   - `git clone https://github.com/lennertvhoy/azure-ai-one-day-workshop.git`
+   - `cd azure-ai-one-day-workshop`
+3. **Run setup launcher:**
+   - `powershell -ExecutionPolicy Bypass -File .\scripts\setup\setup-all.ps1`
+   - Choose **1) Windows native**
+4. **Verify environment again (optional but recommended):**
+   - Re-run launcher and choose **3) Verify only (Windows)**
+
 ## Setup scripts (Windows + WSL)
 - Interactive launcher (choose Windows/WSL/verify):
   - `powershell -ExecutionPolicy Bypass -File .\scripts\setup\setup-all.ps1`
