@@ -20,28 +20,42 @@ Build a GDPR-safe **Python** app that:
 
 ---
 
-## Prerequisites
-Use these internal references as your checklist:
-- **Azure subscription permissions** (create RG, Web App, Key Vault)
-  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
-- **Azure OpenAI resource + deployed model** (e.g., `gpt-4o-mini` or equivalent)
-  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
-- **(Optional) Azure AI Document Intelligence** resource
-  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
-- **Local tooling:** Python 3.11+, Azure CLI (`az`)
-  - See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+## Prerequisites — two delivery modes
+
+### A) Class mode (recommended for live training)
+Use this during class to maximize hands-on lab time.
+
+**Instructor pre-provisions (before class):**
+- Azure OpenAI resource + deployed model
+- (Optional) Document Intelligence resource
+- Subscription guardrails (budget/quota/policies)
+- Optional participant RG baseline (or deploy via `infra/iac`)
+
+**Participants do in class:**
+- `az login` + access check
+- Run local app and lab code
+- Create/deploy Web App + Managed Identity + Key Vault wiring
+
+### B) Self-serve mode (for later reference / homework)
+Participants set up everything end-to-end themselves using:
+- [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+- [`infra/iac/README.md`](../../infra/iac/README.md)
+
+This keeps class fast while preserving full reproducibility afterward.
 
 ---
 
-## Step 0 — Create resource group + set defaults
+## Step 0 — Access check + resource group
 Pick a region (recommend **westeurope**).
+
+> **Class mode:** If instructor already provided `$RG`, reuse it and skip RG creation.
 
 ```bash
 az login
 az account show
 
 export LOCATION=westeurope
-export RG=rg-azure-ai-workshop-$RANDOM
+export RG=${RG:-rg-azure-ai-workshop-$RANDOM}
 az group create -n $RG -l $LOCATION
 ```
 

@@ -19,14 +19,33 @@ Build a GDPR-safe **RAG** app that:
 
 ---
 
-## Step 0 — Create Azure AI Search
-If you haven’t done the full environment setup yet, do that first:
-- See: [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+## Prerequisites — two delivery modes
+
+### A) Class mode (recommended for live training)
+**Instructor pre-provisions (before class):**
+- Azure OpenAI resource + chat & embeddings deployments
+- Optional Azure AI Search service per participant/team (or via IaC)
+- Budget/quotas and region constraints
+
+**Participants do in class:**
+- `az login` + access validation
+- Run ingestion + chat endpoint
+- Connect app settings / Key Vault references
+
+### B) Self-serve mode (for later reference)
+Participants create all dependencies themselves via:
+- [`infra/RESOURCE_SETUP.md`](../../infra/RESOURCE_SETUP.md)
+- [`infra/iac/README.md`](../../infra/iac/README.md)
+
+---
+
+## Step 0 — Create or reuse Azure AI Search
+If using class mode and Search is pre-provisioned, reuse the provided service.
 
 ```bash
 export LOCATION=westeurope
 export RG=<your-rg>
-export SEARCH=srch-aiws-$RANDOM
+export SEARCH=${SEARCH:-srch-aiws-$RANDOM}
 
 az search service create -g $RG -n $SEARCH -l $LOCATION --sku basic
 ```
