@@ -45,6 +45,10 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 120) -> list[st
 
 
 def call_intake(base_url: str, text: str) -> dict:
+    """Send one document to Lab1 to get standardized metadata.
+
+    Reusing Lab1 here guarantees the same logic in API + batch pipeline.
+    """
     body = json.dumps({"text": text}).encode("utf-8")
     req = request.Request(f"{base_url.rstrip('/')}/intake", data=body, method="POST")
     req.add_header("Content-Type", "application/json")
@@ -71,10 +75,14 @@ def main() -> None:
 
     uploaded = 0
     for f in files:
+        # 1) Read file text
         text = f.read_text(encoding="utf-8", errors="ignore")
+
+        # 2) Normalize/classify via Lab1
         intake = call_intake(lab1, text)
         doc_type = intake.get("doc_type", "unknown")
 
+        # 3) Chunk text and map into Search index documents
         docs = []
         for i, ch in enumerate(chunk_text(text)):
             docs.append(
@@ -87,6 +95,7 @@ def main() -> None:
                 }
             )
 
+        # 4) Upload chunk-docs to Search so Lab2 can retrieve them
         if docs:
             client.upload_documents(documents=docs)
             uploaded += len(docs)

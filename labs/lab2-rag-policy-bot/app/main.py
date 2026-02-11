@@ -161,6 +161,14 @@ def health():
 
 @app.post("/upload")
 async def upload(files: list[UploadFile] = File(...)):
+    """Bulk-ingest endpoint used by the web UI.
+
+    Flow per file:
+    1) extract raw text from uploaded file
+    2) optionally call Lab1 /intake for doc classification
+    3) chunk text into searchable pieces
+    4) upload chunks to Azure AI Search
+    """
     index_name = os.getenv("SEARCH_INDEX", "policy-index")
     all_docs: list[dict[str, Any]] = []
     results: list[dict[str, Any]] = []
@@ -200,6 +208,7 @@ async def upload(files: list[UploadFile] = File(...)):
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
+    """RAG chat endpoint: retrieve relevant chunks, then generate grounded answer."""
     index_name = os.getenv("SEARCH_INDEX", "policy-index")
     top_k = int(os.getenv("SEARCH_TOP_K", "5"))
 

@@ -48,6 +48,11 @@ def chunk_text(text: str, chunk_size: int = 1200, overlap: int = 150) -> list[st
 
 
 def call_lab1_intake(base_url: str, text: str) -> dict:
+    """Call Lab 1 API so we reuse the same classification/routing logic.
+
+    This is the core of the enterprise bridge:
+    raw document -> normalized metadata -> indexed knowledge.
+    """
     url = f"{base_url.rstrip('/')}/intake"
     body = json.dumps({"text": text}).encode("utf-8")
     req = request.Request(url, data=body, method="POST")
@@ -81,6 +86,7 @@ def main() -> None:
 
     client = SearchClient(endpoint=endpoint, index_name=args.index, credential=AzureKeyCredential(admin_key))
 
+    # Keep searchable content as chunks, but enrich each chunk with Lab1 metadata.
     chunks = chunk_text(raw_text)
     docs = []
     for idx, ch in enumerate(chunks):
@@ -89,11 +95,12 @@ def main() -> None:
                 "id": str(uuid.uuid4()),
                 "content": ch,
                 "source": source_name,
-                "title": intake.get("doc_type", "unknown"),
+                "title": intake.get("doc_type", "unknown"),  # e.g. invoice / incident_report
                 "chunk": idx,
             }
         )
 
+    # Batch upload keeps requests smaller and more reliable.
     for i in range(0, len(docs), 500):
         client.upload_documents(documents=docs[i : i + 500])
 
