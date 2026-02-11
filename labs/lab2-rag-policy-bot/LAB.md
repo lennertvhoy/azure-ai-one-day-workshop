@@ -160,38 +160,64 @@ curl -X PUT "$SEARCH_ENDPOINT/indexes/policy-index?api-version=2023-11-01" \
 
 ---
 
-## Step 2 — Build ingestion pipeline
-Install deps:
-```bash
-pip install azure-search-documents openai tiktoken
+## Step 2 — Run ingestion pipeline (provided in repo)
+✅ You do **not** need to build this from scratch now. Use the included script:
+- Script: `ingest.py`
+- Sample data: `data/sample-policy.txt`
+
+### PowerShell (Windows)
+```powershell
+cd C:\Users\lennertvhoy\azure-ai-one-day-workshop\labs\lab2-rag-policy-bot
+
+pip install -r requirements.txt
+
+# If needed, rehydrate from KV:
+$SEARCH_ENDPOINT = az keyvault secret show --vault-name $KV -n search-endpoint --query value -o tsv
+$SEARCH_ADMIN_KEY = az keyvault secret show --vault-name $KV -n search-admin-key --query value -o tsv
+
+$env:SEARCH_ENDPOINT = $SEARCH_ENDPOINT
+$env:SEARCH_ADMIN_KEY = $SEARCH_ADMIN_KEY
+
+python .\ingest.py --data .\data --index policy-index
 ```
 
-Ingestion steps:
-1) read docs from `./data/`
-2) chunk (e.g., 800–1200 tokens, overlap 100)
-3) embed each chunk with Azure OpenAI embeddings deployment
-4) upload docs to AI Search
+Expected output example:
+- `Uploaded N chunks to index policy-index.`
 
-**Checkpoint:** at least 50 chunks indexed.
+**Checkpoint:** chunks are uploaded and searchable.
 
 > 📸 **Screenshot suggestion (L2-S03):** Ingestion run output with chunk count and successful upload summary.
 
 ---
 
-## Step 3 — Build chat endpoint (retrieve + generate + cite)
-Behavior requirements:
-- Retrieve top-k chunks (e.g., k=5)
-- Answer using only retrieved content
-- Include citations: `[source#chunk]`
-- If confidence low / no relevant chunks: return **"I don’t know based on the provided documents."**
+## Step 3 — Run chat endpoint (already scaffolded)
+✅ The API is already provided under `app/`:
+- `app/main.py` (`POST /chat`)
+- `app/search.py` (retrieval)
 
-**Prompt skeleton:**
-- System: you are a compliance assistant
-- Context: retrieved chunks with source labels
-- User: question
-- Output: answer + citations
+### PowerShell (Windows)
+```powershell
+cd C:\Users\lennertvhoy\azure-ai-one-day-workshop\labs\lab2-rag-policy-bot
 
-**Checkpoint:** 5-question eval set passes with citations.
+# AOAI env vars (reuse values from Lab 1)
+$env:AZURE_OPENAI_ENDPOINT = az keyvault secret show --vault-name $KV -n azure-openai-endpoint --query value -o tsv
+$env:AZURE_OPENAI_API_KEY = az keyvault secret show --vault-name $KV -n azure-openai-api-key --query value -o tsv
+$env:AZURE_OPENAI_DEPLOYMENT = az keyvault secret show --vault-name $KV -n azure-openai-deployment --query value -o tsv
+
+# Search env vars
+$env:SEARCH_ENDPOINT = az keyvault secret show --vault-name $KV -n search-endpoint --query value -o tsv
+$env:SEARCH_ADMIN_KEY = az keyvault secret show --vault-name $KV -n search-admin-key --query value -o tsv
+$env:SEARCH_INDEX = "policy-index"
+
+uvicorn app.main:app --reload --port 8002
+```
+
+In another PowerShell window:
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8002/chat" -ContentType "application/json" -Body '{"question":"When should I report phishing?"}'
+```
+
+**Checkpoint:** returns answer + citations.
 
 > 📸 **Screenshot suggestion (L2-S04):** Chat response example showing grounded answer + citation format `[source#chunk]`.
 
@@ -229,6 +255,10 @@ Expected outcome:
 > 📸 **Screenshot suggestion (L2-S06):** Prompt-injection test question + safe model response refusing malicious instruction.
 
 ---
+
+## Lab 2 vs Lab 1 (what is reused)
+- Reuses from Lab 1: Azure OpenAI resource + deployment + key/endpoint secrets.
+- New in Lab 2: Azure AI Search index + ingestion + RAG chat endpoint.
 
 ## Success criteria
 - Ingestion works, index populated.
