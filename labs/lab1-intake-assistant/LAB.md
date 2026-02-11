@@ -287,9 +287,21 @@ az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON:3.11"
 az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON|3.11"
 ```
 
-**Checkpoint:** `https://$APP.azurewebsites.net/docs` loads (if FastAPI).
+**Checkpoint:**
+- `https://$APP.azurewebsites.net/health` returns `{"ok":true}`
+- `https://$APP.azurewebsites.net/docs` loads (if FastAPI)
+- `POST /intake` returns structured JSON
 
-> 📸 **Screenshot suggestion (L1-S07):** Live `/docs` Swagger page for deployed app.
+Quick test payload:
+```json
+{
+  "text": "Invoice INV-001 from Contoso Office Supplies for EUR 1,250.00 due in 14 days."
+}
+```
+
+Tip: you can also use examples from `docs/samples/*.md`.
+
+> 📸 **Screenshot suggestion (L1-S07):** Live `/docs` Swagger page + successful `POST /intake` response.
 
 ---
 

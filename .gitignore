@@ -24,3 +24,9 @@ build/
 
 # Azure
 .azure/
+
+# Workshop build artifacts
+labs/lab1-intake-assistant/deploy.zip
+docs/samples/pdf_output/
+docs/samples/diagrams/*.png
+docs/samples/*.rendered.md

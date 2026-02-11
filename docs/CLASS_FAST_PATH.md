@@ -68,11 +68,27 @@ az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON:3.11"
 
 ⏱️ **Wait until deploy completes**. Do **not** run restart/config commands during deploy.
 
-### 3) Validate Lab 1
+### 3) Validate Lab 1 (proof it works)
 Open:
+- `https://<APP>.azurewebsites.net/health` (must return `{"ok":true}`)
 - `https://<APP>.azurewebsites.net/docs`
 
-Test `POST /intake`.
+In `/docs`, test `POST /intake` with this payload:
+```json
+{
+  "text": "Invoice INV-001 from Contoso Office Supplies for EUR 1,250.00 due in 14 days."
+}
+```
+
+Expected: structured JSON including `doc_type`, `entities`, `summary`, `routing`.
+
+If `/health` and `/docs` work but `POST /intake` returns 500:
+1. Confirm AOAI deployment exists (example: `gpt4omini`).
+2. Confirm Key Vault secrets are set and mapped:
+   - `azure-openai-endpoint`
+   - `azure-openai-api-key`
+   - `azure-openai-deployment`
+3. Restart web app and retry.
 
 ### 4) Continue to Lab 2
 Use `labs/lab2-rag-policy-bot/LAB.md` and follow **CLASS mode** sections only.
