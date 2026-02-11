@@ -34,7 +34,7 @@ See `docs/ACCESS_REQUIREMENTS.md` for required Azure roles (instructor + student
 ## What this project does (30 seconds)
 You build two connected Azure AI patterns:
 1) **Lab 1 — Intake Assistant:** turns messy document text into structured JSON (`doc_type`, `entities`, `summary`, `routing`) so it can drive workflows.
-2) **Lab 2 — RAG Policy Bot:** answers questions over internal docs with citations.
+2) **Lab 2 — RAG Policy Bot:** answers questions over internal docs with citations and includes a simple web UI with bulk file upload (`pdf/docx/txt/md/pptx`).
 
 How they connect:
 - Lab 1 produces structured outputs and operational context.

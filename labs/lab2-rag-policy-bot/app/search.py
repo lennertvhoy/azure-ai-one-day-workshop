@@ -28,3 +28,14 @@ def search_top_k(index_name: str, query: str, top: int = 5) -> list[dict[str, An
     for r in results:
         hits.append(dict(r))
     return hits
+
+
+def upload_documents(index_name: str, documents: list[dict[str, Any]]) -> None:
+    endpoint = get_env("SEARCH_ENDPOINT")
+    key = os.getenv("SEARCH_ADMIN_KEY") or os.getenv("SEARCH_API_KEY")
+    if not key:
+        raise RuntimeError("Missing SEARCH_ADMIN_KEY (or SEARCH_API_KEY fallback) for indexing")
+
+    client = SearchClient(endpoint=endpoint, index_name=index_name, credential=AzureKeyCredential(key))
+    for i in range(0, len(documents), 500):
+        client.upload_documents(documents=documents[i : i + 500])

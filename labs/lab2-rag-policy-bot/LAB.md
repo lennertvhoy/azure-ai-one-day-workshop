@@ -230,6 +230,11 @@ In another PowerShell window:
 Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8002/chat" -ContentType "application/json" -Body '{"question":"When should I report phishing?"}'
 ```
 
+Open local UI:
+- `http://127.0.0.1:8002/`
+- Use **Bulk Upload** to upload `pdf/docx/txt/md/pptx`
+- Then ask questions in the same page
+
 **Checkpoint:** returns answer + citations.
 
 > 📸 **Screenshot suggestion (L2-S04):** Chat response example showing grounded answer + citation format `[source#chunk]`.
@@ -324,8 +329,10 @@ Start-Sleep -Seconds 20
 
 ### 4.7 Validate
 - `https://$APP2.azurewebsites.net/health` should return `{"ok":true}`
+- Open `https://$APP2.azurewebsites.net/` (UI)
 - Open `https://$APP2.azurewebsites.net/docs`
 - Test `POST /chat` with a policy question
+- Test `POST /upload` via UI bulk upload
 
 If you see the default "Hey, Python developers" page, startup command is missing or not applied yet.
 
