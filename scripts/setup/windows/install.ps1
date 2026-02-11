@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
 
 function Write-Section($msg) { Write-Host "`n=== $msg ===" -ForegroundColor Cyan }
 function Write-Ok($msg) { Write-Host "[OK] $msg" -ForegroundColor Green }
@@ -38,10 +39,28 @@ function Install-WithWinget {
   Write-Ok "$Name installed"
 }
 
-function Get-PythonCommand {
+function Ensure-AzOnPath {
+  if (Get-Command az -ErrorAction SilentlyContinue) { return }
+  $azCmd = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
+  if (Test-Path $azCmd) {
+    $env:Path = "$([System.IO.Path]::GetDirectoryName($azCmd));$env:Path"
+  }
+}
+
+function Get-PythonMode {
   if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
-  if (Get-Command py -ErrorAction SilentlyContinue) { return "py -3.11" }
+  if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
   return $null
+}
+
+function Invoke-Python {
+  param(
+    [Parameter(Mandatory=$true)][string[]]$Args
+  )
+  $mode = Get-PythonMode
+  if ($mode -eq "python") { & python @Args; return }
+  if ($mode -eq "py") { & py -3.11 @Args; return }
+  throw "Python 3.11+ not found"
 }
 
 Assert-Admin
@@ -67,15 +86,15 @@ if (-not (Test-Path $RepoRoot)) { throw "Repo root not found: $RepoRoot" }
 Write-Ok "Repo root: $RepoRoot"
 
 Write-Section "Installing Python dependencies"
-$pythonCmd = Get-PythonCommand
-if (-not $pythonCmd) {
+$pythonMode = Get-PythonMode
+if (-not $pythonMode) {
   throw "Python command not found after install. Open a new PowerShell window and retry."
 }
 
 if (-not $SkipVenv) {
   $venvPath = Join-Path $RepoRoot ".venv"
   if (-not (Test-Path $venvPath)) {
-    Invoke-Expression "$pythonCmd -m venv `"$venvPath`""
+    Invoke-Python -Args @("-m","venv",$venvPath)
     Write-Ok "Created .venv"
   } else {
     Write-Ok ".venv already exists"
@@ -86,9 +105,9 @@ if (-not $SkipVenv) {
   & "$venvPath\Scripts\pip.exe" install -r (Join-Path $RepoRoot "labs\lab2-rag-policy-bot\requirements.txt")
   Write-Ok "Installed lab requirements in .venv"
 } else {
-  Invoke-Expression "$pythonCmd -m pip install --upgrade pip"
-  Invoke-Expression "$pythonCmd -m pip install -r `"$(Join-Path $RepoRoot "labs\lab1-intake-assistant\requirements.txt")`""
-  Invoke-Expression "$pythonCmd -m pip install -r `"$(Join-Path $RepoRoot "labs\lab2-rag-policy-bot\requirements.txt")`""
+  Invoke-Python -Args @("-m","pip","install","--upgrade","pip")
+  Invoke-Python -Args @("-m","pip","install","-r",(Join-Path $RepoRoot "labs\lab1-intake-assistant\requirements.txt"))
+  Invoke-Python -Args @("-m","pip","install","-r",(Join-Path $RepoRoot "labs\lab2-rag-policy-bot\requirements.txt"))
   Write-Ok "Installed lab requirements globally"
 }
 
@@ -104,10 +123,11 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
 
 if (-not $SkipAzureLogin) {
   Write-Section "Azure login"
+  Ensure-AzOnPath
   if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     Write-Warn "az command not available in this shell yet. Open a new shell, run az login, then verify script."
   } else {
-    az account show 1>$null 2>$null
+    az account show --output none *> $null
     if ($LASTEXITCODE -ne 0) {
       Write-Host "No active Azure session. Running: az login"
       az login

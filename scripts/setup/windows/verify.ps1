@@ -4,6 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+$PSNativeCommandUseErrorActionPreference = $false
 $failures = 0
 
 function Check($name, $scriptBlock) {
@@ -17,10 +18,28 @@ function Check($name, $scriptBlock) {
   }
 }
 
-function Get-PythonCommand {
+function Ensure-AzOnPath {
+  if (Get-Command az -ErrorAction SilentlyContinue) { return }
+  $azCmd = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
+  if (Test-Path $azCmd) {
+    $env:Path = "$([System.IO.Path]::GetDirectoryName($azCmd));$env:Path"
+  }
+}
+
+function Get-PythonMode {
   if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
-  if (Get-Command py -ErrorAction SilentlyContinue) { return "py -3.11" }
+  if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
   return $null
+}
+
+function Invoke-Python {
+  param(
+    [Parameter(Mandatory=$true)][string[]]$Args
+  )
+  $mode = Get-PythonMode
+  if ($mode -eq "python") { & python @Args; return }
+  if ($mode -eq "py") { & py -3.11 @Args; return }
+  throw "Python 3.11+ not found"
 }
 
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
@@ -36,25 +55,27 @@ Check "Git available" {
 }
 
 Check "Python >= 3.11" {
-  $pythonCmd = Get-PythonCommand
-  if (-not $pythonCmd) { throw "Python not found (install Python 3.11+)" }
-  $v = Invoke-Expression "$pythonCmd -c \"import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')\""
+  $mode = Get-PythonMode
+  if (-not $mode) { throw "Python not found (install Python 3.11+)" }
+  $v = (Invoke-Python -Args @("-c","import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')") | Out-String).Trim()
   if ($LASTEXITCODE -ne 0) { throw "Python command failed" }
-  $parts = $v.Trim().Split('.')
+  $parts = $v.Split('.')
   if ([int]$parts[0] -lt 3 -or ([int]$parts[0] -eq 3 -and [int]$parts[1] -lt 11)) {
     throw "Python 3.11+ required, found $v"
   }
 }
 
 Check "Azure CLI available" {
+  Ensure-AzOnPath
   if (-not (Get-Command az -ErrorAction SilentlyContinue)) { throw "az not found" }
-  az version --output none
+  az version --output none *> $null
   if ($LASTEXITCODE -ne 0) { throw "az command failed" }
 }
 
 Check "Azure login" {
+  Ensure-AzOnPath
   if (-not (Get-Command az -ErrorAction SilentlyContinue)) { throw "az not found" }
-  az account show --output none
+  az account show --output none *> $null
   if ($LASTEXITCODE -ne 0) {
     if ($StrictAzureLogin) { throw "Not logged in (run az login)" }
     else { throw "Not logged in yet (run az login before labs)" }
@@ -70,13 +91,12 @@ Check "Lab requirements files exist" {
 
 Check "Python packages import test" {
   $venvPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+  $code = "import fastapi,uvicorn,pydantic,dotenv,openai,azure.search.documents; print('imports ok')"
   if (Test-Path $venvPy) {
-    & $venvPy -c "import fastapi,uvicorn,pydantic,dotenv,openai,azure.search.documents; print('imports ok')"
+    & $venvPy -c $code
     if ($LASTEXITCODE -ne 0) { throw "Package imports failed in .venv" }
   } else {
-    $pythonCmd = Get-PythonCommand
-    if (-not $pythonCmd) { throw "Python not found" }
-    Invoke-Expression "$pythonCmd -c \"import fastapi,uvicorn,pydantic,dotenv,openai,azure.search.documents; print('imports ok')\""
+    Invoke-Python -Args @("-c",$code)
     if ($LASTEXITCODE -ne 0) { throw "Package imports failed" }
   }
 }
