@@ -31,6 +31,9 @@ Use this flow for each participant machine:
 4. **Verify environment again (optional but recommended):**
    - Re-run launcher and choose **3) Verify only (Windows)**
 
+Troubleshooting:
+- If `python` or `az` is not recognized right after install, close PowerShell and open a new **Administrator** PowerShell, then run verify again.
+
 ## Setup scripts (Windows + WSL)
 - Interactive launcher (choose Windows/WSL/verify):
   - `powershell -ExecutionPolicy Bypass -File .\scripts\setup\setup-all.ps1`

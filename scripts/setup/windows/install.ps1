@@ -11,8 +11,8 @@ function Write-Ok($msg) { Write-Host "[OK] $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
 
 function Assert-Admin {
-  $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent())
-    .IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+  $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
   if (-not $isAdmin) {
     throw "Please run this script in an elevated PowerShell session (Run as Administrator)."
   }
@@ -24,18 +24,24 @@ function Install-WithWinget {
     [Parameter(Mandatory=$true)][string]$Name
   )
 
-  $exists = winget list --id $Id --exact 2>$null
+  $exists = winget list --id $Id --exact --source winget 2>$null
   if ($LASTEXITCODE -eq 0 -and $exists) {
     Write-Ok "$Name already installed"
     return
   }
 
   Write-Host "Installing $Name ($Id)..."
-  winget install --id $Id --exact --silent --accept-source-agreements --accept-package-agreements
+  winget install --id $Id --exact --source winget --silent --accept-source-agreements --accept-package-agreements
   if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install $Name via winget ($Id)."
+    throw "Failed to install $Name via winget ($Id). Try: winget source reset --force"
   }
   Write-Ok "$Name installed"
+}
+
+function Get-PythonCommand {
+  if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
+  if (Get-Command py -ErrorAction SilentlyContinue) { return "py -3.11" }
+  return $null
 }
 
 Assert-Admin
@@ -61,14 +67,15 @@ if (-not (Test-Path $RepoRoot)) { throw "Repo root not found: $RepoRoot" }
 Write-Ok "Repo root: $RepoRoot"
 
 Write-Section "Installing Python dependencies"
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-  throw "python command not found after install. Open a new shell and retry."
+$pythonCmd = Get-PythonCommand
+if (-not $pythonCmd) {
+  throw "Python command not found after install. Open a new PowerShell window and retry."
 }
 
 if (-not $SkipVenv) {
   $venvPath = Join-Path $RepoRoot ".venv"
   if (-not (Test-Path $venvPath)) {
-    python -m venv $venvPath
+    Invoke-Expression "$pythonCmd -m venv `"$venvPath`""
     Write-Ok "Created .venv"
   } else {
     Write-Ok ".venv already exists"
@@ -79,9 +86,9 @@ if (-not $SkipVenv) {
   & "$venvPath\Scripts\pip.exe" install -r (Join-Path $RepoRoot "labs\lab2-rag-policy-bot\requirements.txt")
   Write-Ok "Installed lab requirements in .venv"
 } else {
-  python -m pip install --upgrade pip
-  python -m pip install -r (Join-Path $RepoRoot "labs\lab1-intake-assistant\requirements.txt")
-  python -m pip install -r (Join-Path $RepoRoot "labs\lab2-rag-policy-bot\requirements.txt")
+  Invoke-Expression "$pythonCmd -m pip install --upgrade pip"
+  Invoke-Expression "$pythonCmd -m pip install -r `"$(Join-Path $RepoRoot "labs\lab1-intake-assistant\requirements.txt")`""
+  Invoke-Expression "$pythonCmd -m pip install -r `"$(Join-Path $RepoRoot "labs\lab2-rag-policy-bot\requirements.txt")`""
   Write-Ok "Installed lab requirements globally"
 }
 
@@ -97,12 +104,16 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
 
 if (-not $SkipAzureLogin) {
   Write-Section "Azure login"
-  az account show 1>$null 2>$null
-  if ($LASTEXITCODE -ne 0) {
-    Write-Host "No active Azure session. Running: az login"
-    az login
+  if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+    Write-Warn "az command not available in this shell yet. Open a new shell, run az login, then verify script."
+  } else {
+    az account show 1>$null 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "No active Azure session. Running: az login"
+      az login
+    }
+    az account show --output table
   }
-  az account show --output table
 }
 
 Write-Section "Done"

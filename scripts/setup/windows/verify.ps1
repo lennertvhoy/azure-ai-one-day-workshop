@@ -17,6 +17,12 @@ function Check($name, $scriptBlock) {
   }
 }
 
+function Get-PythonCommand {
+  if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
+  if (Get-Command py -ErrorAction SilentlyContinue) { return "py -3.11" }
+  return $null
+}
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
   $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
 }
@@ -26,24 +32,28 @@ Write-Host "Repo: $RepoRoot"
 
 Check "Git available" {
   $v = git --version
-  if (-not $v) { throw "git not responding" }
+  if ($LASTEXITCODE -ne 0 -or -not $v) { throw "git not responding" }
 }
 
 Check "Python >= 3.11" {
-  $py = Get-Command python -ErrorAction Stop
-  $v = python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-  $parts = $v.Split('.')
+  $pythonCmd = Get-PythonCommand
+  if (-not $pythonCmd) { throw "Python not found (install Python 3.11+)" }
+  $v = Invoke-Expression "$pythonCmd -c \"import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')\""
+  if ($LASTEXITCODE -ne 0) { throw "Python command failed" }
+  $parts = $v.Trim().Split('.')
   if ([int]$parts[0] -lt 3 -or ([int]$parts[0] -eq 3 -and [int]$parts[1] -lt 11)) {
     throw "Python 3.11+ required, found $v"
   }
 }
 
 Check "Azure CLI available" {
-  $v = az version --output json
-  if (-not $v) { throw "az not responding" }
+  if (-not (Get-Command az -ErrorAction SilentlyContinue)) { throw "az not found" }
+  az version --output none
+  if ($LASTEXITCODE -ne 0) { throw "az command failed" }
 }
 
 Check "Azure login" {
+  if (-not (Get-Command az -ErrorAction SilentlyContinue)) { throw "az not found" }
   az account show --output none
   if ($LASTEXITCODE -ne 0) {
     if ($StrictAzureLogin) { throw "Not logged in (run az login)" }
@@ -62,8 +72,12 @@ Check "Python packages import test" {
   $venvPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"
   if (Test-Path $venvPy) {
     & $venvPy -c "import fastapi,uvicorn,pydantic,dotenv,openai,azure.search.documents; print('imports ok')"
+    if ($LASTEXITCODE -ne 0) { throw "Package imports failed in .venv" }
   } else {
-    python -c "import fastapi,uvicorn,pydantic,dotenv,openai,azure.search.documents; print('imports ok')"
+    $pythonCmd = Get-PythonCommand
+    if (-not $pythonCmd) { throw "Python not found" }
+    Invoke-Expression "$pythonCmd -c \"import fastapi,uvicorn,pydantic,dotenv,openai,azure.search.documents; print('imports ok')\""
+    if ($LASTEXITCODE -ne 0) { throw "Package imports failed" }
   }
 }
 
