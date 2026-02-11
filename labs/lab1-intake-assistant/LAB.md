@@ -107,12 +107,28 @@ az keyvault secret show --vault-name $KV -n azure-openai-deployment --query valu
 ---
 
 ## Step 2 — Local app (thin slice)
-Create a virtualenv:
+Create a virtualenv.
+
+### PowerShell (Windows)
+```powershell
+python -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install -r .\labs\lab1-intake-assistant\requirements.txt
+```
+
+If activation is blocked or you prefer no activation:
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r .\labs\lab1-intake-assistant\requirements.txt
+```
+
+### Bash (WSL/macOS/Linux)
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -U pip
-pip install fastapi uvicorn azure-identity azure-keyvault-secrets azure-ai-formrecognizer openai pydantic
+python -m pip install -U pip
+python -m pip install -r ./labs/lab1-intake-assistant/requirements.txt
 ```
 
 ### Minimal API contract

@@ -43,9 +43,20 @@ az webapp config appsettings set -g $RG -n $APP --settings `
   AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-deployment/)"
 ```
 
-### 2) Deploy Lab 1 app
+### 2) (Optional) Verify locally first, then deploy Lab 1 app
 ```powershell
+# optional local run
+python -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r .\labs\lab1-intake-assistant\requirements.txt
 cd labs\lab1-intake-assistant
+python -m uvicorn app.main:app --reload
+# open http://127.0.0.1:8000/docs
+```
+
+Then deploy:
+```powershell
 az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON:3.11"
 ```
 
