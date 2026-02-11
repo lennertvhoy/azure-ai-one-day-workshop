@@ -59,8 +59,8 @@ export SEARCH_ENDPOINT="https://$SEARCH.search.windows.net"
 Store in Key Vault:
 ```bash
 export KV=<your-kv>
-az keyvault secret set --vault-name $KV -n SEARCH_ENDPOINT --value "$SEARCH_ENDPOINT"
-az keyvault secret set --vault-name $KV -n SEARCH_ADMIN_KEY --value "$SEARCH_ADMIN_KEY"
+az keyvault secret set --vault-name $KV -n search-endpoint --value "$SEARCH_ENDPOINT"
+az keyvault secret set --vault-name $KV -n search-admin-key --value "$SEARCH_ADMIN_KEY"
 ```
 
 **Checkpoint:** Search service exists in portal.
@@ -132,13 +132,13 @@ Behavior requirements:
 ## Step 4 — Deploy to Azure Web App (same pattern as Lab 1)
 - Web App with Managed Identity
 - Key Vault Secrets User role
-- App settings using Key Vault references for:
-  - `AZURE_OPENAI_ENDPOINT`
-  - `AZURE_OPENAI_API_KEY`
-  - `AZURE_OPENAI_DEPLOYMENT`
-  - `EMBEDDINGS_DEPLOYMENT`
-  - `SEARCH_ENDPOINT`
-  - `SEARCH_ADMIN_KEY` (for indexing; for runtime prefer query key)
+- App settings using Key Vault references (env var key → Key Vault secret name):
+  - `AZURE_OPENAI_ENDPOINT` → `azure-openai-endpoint`
+  - `AZURE_OPENAI_API_KEY` → `azure-openai-api-key`
+  - `AZURE_OPENAI_DEPLOYMENT` → `azure-openai-deployment`
+  - `EMBEDDINGS_DEPLOYMENT` → `embeddings-deployment`
+  - `SEARCH_ENDPOINT` → `search-endpoint`
+  - `SEARCH_ADMIN_KEY` → `search-admin-key` (for indexing; for runtime prefer query key)
 
 **Hardening (recommended):**
 - Use a **Query Key** for runtime search calls (least privilege)

@@ -21,6 +21,9 @@ This folder provides a cost-controlled Azure IaC starter for workshop delivery.
 # login once
 az login
 
+# OPTIONAL: generate unique per-student variable values
+powershell -ExecutionPolicy Bypass -File .\infra\iac\student-vars.ps1 -StudentCode p01 -WriteFile
+
 # deploy participant p01 (default expiry = now + 8h)
 powershell -ExecutionPolicy Bypass -File .\infra\iac\deploy.ps1 -ParticipantId p01 -Owner lenny
 

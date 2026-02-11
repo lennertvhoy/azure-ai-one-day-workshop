@@ -12,6 +12,10 @@ If you want complete setup knowledge, use all three in this order:
 2) `infra/iac/README.md` (preferred provisioning path)
 3) `infra/RESOURCE_SETUP.md` (manual `az` fallback/reference)
 
+Important naming note:
+- Key Vault secret names must use only letters/numbers/dashes (no underscores).
+- App setting keys can still use underscores (e.g. `AZURE_OPENAI_ENDPOINT`).
+
 ---
 
 ## Recommended region
@@ -37,6 +41,15 @@ az login
 az account show
 az account list -o table
 az account set --subscription "<SUBSCRIPTION_NAME_OR_ID>"
+```
+
+Generate unique per-student names (recommended for multi-student cohorts):
+
+```powershell
+# copy/paste (change StudentCode)
+powershell -ExecutionPolicy Bypass -File .\infra\iac\student-vars.ps1 -StudentCode p01 -WriteFile
+# optional: load generated vars into current shell
+. .\.student-vars.p01.ps1
 ```
 
 ### B) Ubuntu on WSL (optional path)
@@ -111,10 +124,15 @@ az webapp create --name $APP --resource-group $RG --plan $PLAN --runtime "PYTHON
 ## Phase 3 — Azure OpenAI (resource + model deployment)
 > Many tenants require approval for Azure OpenAI. For workshops, pre-provisioning is strongly recommended.
 
-### PowerShell
+### What is copy/paste vs fill in?
+- ✅ **Copy/paste directly:** all commands below.
+- ✍️ **Fill in / choose:** model + deployment settings if your region/tenant doesn’t support defaults.
+
+### PowerShell (manual path)
 ```powershell
+# Copy/paste
 $AOAI = "aoai-aiws-$SUFFIX"
-$AOAI_DEPLOYMENT = "gpt-4o-mini"
+$AOAI_DEPLOYMENT = "gpt4omini"   # you can rename this
 
 az cognitiveservices account create `
   --name $AOAI `
@@ -123,6 +141,7 @@ az cognitiveservices account create `
   --kind OpenAI `
   --sku S0
 
+# Try this first (commonly works):
 az cognitiveservices account deployment create `
   --name $AOAI `
   --resource-group $RG `
@@ -130,21 +149,26 @@ az cognitiveservices account deployment create `
   --model-name gpt-4o-mini `
   --model-version "2024-07-18" `
   --model-format OpenAI `
-  --sku-capacity 10 `
-  --sku-name "Standard"
+  --sku-name "GlobalStandard"
+
+# If deployment fails in your region/tenant:
+# 1) Create the model deployment in Azure AI Foundry/Portal
+# 2) Keep using the deployment name you created in $AOAI_DEPLOYMENT
 
 $AOAI_ENDPOINT = "https://$AOAI.openai.azure.com"
 $AOAI_KEY = az cognitiveservices account keys list -g $RG -n $AOAI --query key1 -o tsv
 
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_ENDPOINT --value "$AOAI_ENDPOINT"
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_DEPLOYMENT --value "$AOAI_DEPLOYMENT"
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_API_KEY --value "$AOAI_KEY"
+# Key Vault secret names use dashes (not underscores)
+az keyvault secret set --vault-name $KV -n azure-openai-endpoint --value "$AOAI_ENDPOINT"
+az keyvault secret set --vault-name $KV -n azure-openai-deployment --value "$AOAI_DEPLOYMENT"
+az keyvault secret set --vault-name $KV -n azure-openai-api-key --value "$AOAI_KEY"
 ```
 
-### Bash
+### Bash (manual path)
 ```bash
+# Copy/paste
 export AOAI=aoai-aiws-$RANDOM
-export AOAI_DEPLOYMENT=gpt-4o-mini
+export AOAI_DEPLOYMENT=gpt4omini
 
 az cognitiveservices account create \
   --name $AOAI \
@@ -160,15 +184,17 @@ az cognitiveservices account deployment create \
   --model-name gpt-4o-mini \
   --model-version "2024-07-18" \
   --model-format OpenAI \
-  --sku-capacity 10 \
-  --sku-name "Standard"
+  --sku-name "GlobalStandard"
+
+# If deployment fails: create deployment in Portal and keep AOAI_DEPLOYMENT aligned.
 
 export AOAI_ENDPOINT="https://$AOAI.openai.azure.com"
 export AOAI_KEY=$(az cognitiveservices account keys list -g $RG -n $AOAI --query key1 -o tsv)
 
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_ENDPOINT --value "$AOAI_ENDPOINT"
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_DEPLOYMENT --value "$AOAI_DEPLOYMENT"
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_API_KEY --value "$AOAI_KEY"
+# Key Vault secret names use dashes (not underscores)
+az keyvault secret set --vault-name $KV -n azure-openai-endpoint --value "$AOAI_ENDPOINT"
+az keyvault secret set --vault-name $KV -n azure-openai-deployment --value "$AOAI_DEPLOYMENT"
+az keyvault secret set --vault-name $KV -n azure-openai-api-key --value "$AOAI_KEY"
 ```
 
 ---
@@ -188,8 +214,8 @@ az cognitiveservices account create `
 $DOCINTEL_ENDPOINT = az cognitiveservices account show -g $RG -n $DOCINTEL --query properties.endpoint -o tsv
 $DOCINTEL_KEY = az cognitiveservices account keys list -g $RG -n $DOCINTEL --query key1 -o tsv
 
-az keyvault secret set --vault-name $KV -n DOCINTEL_ENDPOINT --value "$DOCINTEL_ENDPOINT"
-az keyvault secret set --vault-name $KV -n DOCINTEL_API_KEY --value "$DOCINTEL_KEY"
+az keyvault secret set --vault-name $KV -n docintel-endpoint --value "$DOCINTEL_ENDPOINT"
+az keyvault secret set --vault-name $KV -n docintel-api-key --value "$DOCINTEL_KEY"
 ```
 
 ### Bash
@@ -205,8 +231,8 @@ az cognitiveservices account create \
 export DOCINTEL_ENDPOINT=$(az cognitiveservices account show -g $RG -n $DOCINTEL --query properties.endpoint -o tsv)
 export DOCINTEL_KEY=$(az cognitiveservices account keys list -g $RG -n $DOCINTEL --query key1 -o tsv)
 
-az keyvault secret set --vault-name $KV -n DOCINTEL_ENDPOINT --value "$DOCINTEL_ENDPOINT"
-az keyvault secret set --vault-name $KV -n DOCINTEL_API_KEY --value "$DOCINTEL_KEY"
+az keyvault secret set --vault-name $KV -n docintel-endpoint --value "$DOCINTEL_ENDPOINT"
+az keyvault secret set --vault-name $KV -n docintel-api-key --value "$DOCINTEL_KEY"
 ```
 
 ---
