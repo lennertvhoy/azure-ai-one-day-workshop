@@ -282,6 +282,21 @@ az role assignment create \
   - Cause: regional model/SKU availability differences.
   - Fix: use Portal/Foundry deployment fallback and keep deployment name aligned in variables.
 
+## ✅ After Phase 5 — exactly what to do next
+If you reached here successfully, infra setup is complete. Continue in this exact order:
+
+1) **Go to Lab 1** → `labs/lab1-intake-assistant/LAB.md`
+2) Run **Step 5** (set Web App app settings with Key Vault references)
+3) Run **Step 6** (deploy code with `az webapp up`)
+4) Open: `https://<APP_NAME>.azurewebsites.net/docs`
+5) Test `POST /intake`
+6) Then continue to **Lab 2**
+
+Quick check command:
+```powershell
+az webapp show -g $RG -n $APP -o table
+```
+
 ## Recommended for paid course operations
 - Prefer **IaC** for cohorts: `infra/iac/README.md`
 - Keep manual `az` steps as reference and fallback

@@ -72,21 +72,21 @@ az keyvault create -g $RG -n $KV -l $LOCATION
 ```
 
 Add secrets (names are examples):
-- `AZURE_OPENAI_ENDPOINT`
-- `AZURE_OPENAI_API_KEY` (if you cannot use MI for AOAI; many orgs still use key)
-- `AZURE_OPENAI_DEPLOYMENT`
-- (Optional) `DOCINTEL_ENDPOINT`
-- (Optional) `DOCINTEL_API_KEY`
+- `azure-openai-endpoint`
+- `azure-openai-api-key` (if you cannot use MI for AOAI; many orgs still use key)
+- `azure-openai-deployment`
+- (Optional) `docintel-endpoint`
+- (Optional) `docintel-api-key`
 
 ```bash
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_ENDPOINT --value "https://<your-aoai>.openai.azure.com/"
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_API_KEY --value "<key>"
-az keyvault secret set --vault-name $KV -n AZURE_OPENAI_DEPLOYMENT --value "<deployment-name>"
+az keyvault secret set --vault-name $KV -n azure-openai-endpoint --value "https://<your-aoai>.openai.azure.com/"
+az keyvault secret set --vault-name $KV -n azure-openai-api-key --value "<key>"
+az keyvault secret set --vault-name $KV -n azure-openai-deployment --value "<deployment-name>"
 ```
 
 **Checkpoint:** you can retrieve one secret:
 ```bash
-az keyvault secret show --vault-name $KV -n AZURE_OPENAI_DEPLOYMENT --query value -o tsv
+az keyvault secret show --vault-name $KV -n azure-openai-deployment --query value -o tsv
 ```
 
 > 📸 **Screenshot suggestion (L1-S02):** Key Vault Secrets list showing required secret names (mask values).
@@ -170,12 +170,15 @@ az role assignment create --assignee-object-id $MI_PRINCIPAL_ID \
 
 ## Step 5 — Configure Key Vault references in App Settings
 Set settings to Key Vault references (App Service supports `@Microsoft.KeyVault(...)`).
+
+> If you just finished `infra/RESOURCE_SETUP.md` Phase 5, this is your immediate next step.
+
 Example:
 ```bash
 az webapp config appsettings set -g $RG -n $APP --settings \
-  AZURE_OPENAI_ENDPOINT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/AZURE_OPENAI_ENDPOINT/)" \
-  AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/AZURE_OPENAI_API_KEY/)" \
-  AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/AZURE_OPENAI_DEPLOYMENT/)"
+  AZURE_OPENAI_ENDPOINT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-endpoint/)" \
+  AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-api-key/)" \
+  AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-deployment/)"
 ```
 
 **Checkpoint:** In Azure Portal → Web App → Configuration, values show as Key Vault references (not plain text).
