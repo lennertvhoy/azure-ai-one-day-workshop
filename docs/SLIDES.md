@@ -34,6 +34,11 @@ By end of day, participants can:
 - **Self-serve mode:** full setup docs remain for later reuse
 - Goal: maximize learning, minimize setup drag
 
+Teaching balance rule:
+- Explain **why** (60–90 sec)
+- Show **one command block** (copy/paste)
+- Immediately validate with **one checkpoint**
+
 **Image suggestion:** two-lane diagram (Class Mode vs Self-Serve Mode).
 
 ---
@@ -63,6 +68,16 @@ By end of day, participants can:
 3) return strict JSON
 4) route by team/priority
 
+Command card (show, then run):
+```powershell
+az webapp config appsettings set ...
+az webapp up ...
+```
+
+Talk track (max 90s):
+- Why Key Vault refs: no secrets in code
+- Why strict JSON: stable automation downstream
+
 **Screenshot suggestion:** L1-S03 (`POST /intake` valid JSON response).
 
 ---
@@ -81,6 +96,16 @@ By end of day, participants can:
 2) embed + index
 3) retrieve top-k
 4) answer with `[source#chunk]`
+
+Command card (show, then run):
+```bash
+python ingest.py
+curl .../chat
+```
+
+Talk track (max 90s):
+- Why citations: trust + auditability
+- Why "I don't know": safer than hallucination
 
 **Screenshot suggestion:** L2-S04 cited answer example.
 
@@ -138,5 +163,10 @@ By end of day, participants can:
 - You shipped two real Azure AI patterns
 - You used secure defaults
 - You now have reusable templates for production pilots
+
+Retro prompt (2 minutes):
+- Which command felt like "magic" until explained?
+- Which architecture choice gave the most confidence?
+- What would you reuse tomorrow at work?
 
 **Screenshot suggestion:** class “wins” collage (deployed endpoint, cited answer, role assignment).

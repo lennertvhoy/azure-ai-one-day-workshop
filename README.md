@@ -12,6 +12,7 @@ Audience: Belgian technical professionals with **some Azure**.
 - `docs/THEORY_GUIDE.md` — companion theory notes aligned with labs
 - `docs/SLIDES.md` — markdown slide deck (`---` separators) with image/screenshot suggestions
 - `docs/CLASS_FAST_PATH.md` — canonical in-class flow (lowest confusion path)
+- `docs/COMMAND_CARDS.md` — concise command + concept + checkpoint cards for live teaching
 - `labs/lab1-intake-assistant/LAB.md` — Lab 1 manual (Document → JSON → workflow)
 - `labs/lab2-rag-policy-bot/LAB.md` — Lab 2 manual (RAG bot with citations)
 - `infra/` — infra notes + az cli snippets

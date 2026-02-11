@@ -80,3 +80,11 @@ Practical controls:
 - What should happen when retrieval confidence is low?
 - How would you prove compliance for a regulator/customer?
 - Which parts should be shared platform vs per-team customization?
+
+## 10) Command-to-concept mapping (for teaching)
+Use this to avoid "just copy/paste" feeling:
+- `az keyvault secret set ...` → **secret lifecycle management**
+- `az webapp config appsettings set ...` → **runtime secret injection**
+- `az webapp up ...` → **deployment mechanics (build + release)**
+- `python ingest.py` → **data preparation for retrieval quality**
+- `POST /intake` / `POST /chat` → **behavior validation checkpoints**

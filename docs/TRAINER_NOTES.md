@@ -26,6 +26,15 @@
 - Lab 1 runs long → skip CSV export + keep only JSON output.
 - Lab 2 runs long → skip embeddings deep-dive; provide pre-chunked docs.
 
+## Teaching cadence (balanced depth)
+Use this loop per major step:
+1. **Why (60–90 sec):** what problem this step solves.
+2. **Do (2–5 min):** one copy/paste command block only.
+3. **Check (30 sec):** one visible checkpoint (`/docs`, role assignment, citation output).
+4. **Reflect (30 sec):** one sentence on production relevance.
+
+Avoid multi-command walls without context; chunk commands into "command cards".
+
 ## Suggested checkpoints (verbatim)
 - “Show me your endpoint response JSON.”
 - “Show me Key Vault access policy / role assignment.”

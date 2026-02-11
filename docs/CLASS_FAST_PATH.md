@@ -79,3 +79,14 @@ Use `labs/lab2-rag-policy-bot/LAB.md` and follow **CLASS mode** sections only.
 - If `$RG/$KV/$APP` already exist: **do not recreate them**.
 - In PowerShell, use `$VAR = "value"` (not `export`).
 - Key Vault secret names use dashes, not underscores.
+
+## Instructor delivery pattern (recommended)
+For each command block in class:
+- 1 sentence: *why this command exists*
+- run command
+- 1 visible checkpoint
+
+Example:
+- Why: "We wire app settings to Key Vault so secrets never live in code."
+- Command: `az webapp config appsettings set ...`
+- Checkpoint: App Settings show Key Vault references.
