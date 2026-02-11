@@ -14,6 +14,10 @@ See `docs/COURSE_POSITIONING.md` for headline, value propositions, audience fit,
 See `docs/ACCESS_REQUIREMENTS.md` for required Azure roles (instructor + students), RBAC prerequisites, and a copy-paste request template.
 
 ## Package contents
+- `apps/demo-console/` — Streamlit GUI to demo Lab 1 + Lab 2 side-by-side
+- `scripts/demo/generate_dataset.py` — synthetic GDPR-safe dataset generator
+- `scripts/demo/run_pipeline.py` — batch Lab1->Lab2 ingestion pipeline
+- `docs/DEMO_SCRIPT.md` — ready-to-use live demo script
 - `docs/DAY_PLAN.md` — minute-by-minute schedule + learning objectives
 - `docs/TRAINER_NOTES.md` — facilitation notes, checkpoints, recovery plans
 - `docs/THEORY_GUIDE.md` — companion theory notes aligned with labs
