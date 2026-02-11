@@ -259,6 +259,25 @@ Expected outcome:
 ## Lab 2 vs Lab 1 (what is reused)
 - Reuses from Lab 1: Azure OpenAI resource + deployment + key/endpoint secrets.
 - New in Lab 2: Azure AI Search index + ingestion + RAG chat endpoint.
+- Optional enterprise bridge: pass raw docs through Lab 1 intake first, then index into Lab 2 Search.
+
+### Optional Step 2B — Bridge Lab 1 intake into Lab 2 indexing
+Use this when you want an enterprise-style pipeline:
+`Document -> Intake API (classification/routing) -> Search index -> RAG chatbot`
+
+PowerShell:
+```powershell
+cd C:\Users\lennertvhoy\azure-ai-one-day-workshop\labs\lab2-rag-policy-bot
+
+$env:LAB1_URL = "https://app-aiws-1831894484.azurewebsites.net"
+$env:SEARCH_ENDPOINT = az keyvault secret show --vault-name $KV -n search-endpoint --query value -o tsv
+$env:SEARCH_ADMIN_KEY = az keyvault secret show --vault-name $KV -n search-admin-key --query value -o tsv
+$env:SEARCH_INDEX = "policy-index"
+
+python .\bridge_from_lab1.py --file .\data\sample-policy.txt --source sample-policy.txt
+```
+
+Expected: JSON summary with `chunks_uploaded` and Lab 1 intake metadata (`doc_type`, `routing`, `summary`).
 
 ## Success criteria
 - Ingestion works, index populated.
