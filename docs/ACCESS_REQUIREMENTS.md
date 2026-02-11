@@ -5,6 +5,16 @@ Use this document when requesting Azure access for workshop delivery.
 ## Why this matters
 Lab deployment uses managed identities and Key Vault secret references. That requires creating RBAC role assignments (e.g., Web App identity -> Key Vault Secrets User). If `roleAssignments/write` is missing, labs block on deployment hardening.
 
+```mermaid
+flowchart TD
+  A[Instructor account] --> B{Has roleAssignments/write?}
+  B -->|Yes| C[Assign Key Vault Secrets User\nto Web App identity]
+  C --> D[Use Key Vault references\nin app settings]
+  B -->|No| E[Use temporary plain app settings fallback]
+  E --> F[Deliver class]
+  F --> G[Re-harden to KV references\nonce IAM rights are granted]
+```
+
 ---
 
 ## Instructor access (required)

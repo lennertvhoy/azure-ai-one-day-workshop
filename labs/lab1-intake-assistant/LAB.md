@@ -30,6 +30,15 @@ Typical uses:
 - Secrets: Key Vault
 - Hosting: Azure Web App (Linux)
 
+```mermaid
+flowchart LR
+  D[Raw document text] --> X[Optional extraction\nDoc Intelligence/OCR]
+  X --> I[FastAPI /intake]
+  I --> O[Azure OpenAI\nJSON normalization]
+  O --> R[Structured output\ndoc_type + entities + routing]
+  R --> T[Automation target\nFinance/IT/HR workflows]
+```
+
 ---
 
 ## Prerequisites — two delivery modes

@@ -36,6 +36,17 @@ How they connect:
 - Lab 2 provides grounded Q&A over policy/knowledge documents.
 - Together they form an intake + decision-support pipeline.
 
+```mermaid
+flowchart LR
+  A[Incoming documents\nPDF/email/text] --> B[Lab 1 Intake API\nNormalize + classify + route]
+  B --> C[(Operational Store / Queue)]
+  C --> D[Lab 2 Ingestion\nChunk + index]
+  D --> E[(Azure AI Search\npolicy-index)]
+  U[User question] --> F[Lab 2 Chat API\nRetrieve + generate]
+  E --> F
+  F --> G[Grounded answer\nwith citations]
+```
+
 ## Guardrails (GDPR-safe)
 - Use **sample documents** only (no PII)
 - Use **Key Vault** for secrets

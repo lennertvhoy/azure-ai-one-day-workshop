@@ -25,6 +25,17 @@ In real systems, these are complementary: intake events from Lab 1 often trigger
 - Hosting: Azure Web App (FastAPI)
 - Secrets: Key Vault
 
+```mermaid
+flowchart LR
+  S[Source docs] --> C[Chunk + prepare]
+  C --> IDX[(Azure AI Search\npolicy-index)]
+  Q[User question] --> API[FastAPI /chat]
+  API --> RET[Retrieve top-k]
+  RET --> IDX
+  RET --> LLM[Azure OpenAI]
+  LLM --> A[Answer + citations]
+```
+
 ---
 
 ## Prerequisites — two delivery modes
