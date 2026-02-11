@@ -10,6 +10,9 @@ Audience: Belgian technical professionals with **some Azure**.
 ## Course positioning (sales-ready)
 See `docs/COURSE_POSITIONING.md` for headline, value propositions, audience fit, and outcomes.
 
+## Access requirements (for IT/employer)
+See `docs/ACCESS_REQUIREMENTS.md` for required Azure roles (instructor + students), RBAC prerequisites, and a copy-paste request template.
+
 ## Package contents
 - `docs/DAY_PLAN.md` — minute-by-minute schedule + learning objectives
 - `docs/TRAINER_NOTES.md` — facilitation notes, checkpoints, recovery plans
