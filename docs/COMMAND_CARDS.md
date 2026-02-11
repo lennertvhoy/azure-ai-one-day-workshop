@@ -22,6 +22,7 @@ Checkpoint: Web App Configuration shows `@Microsoft.KeyVault(...)` values.
 az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON:3.11"
 ```
 Meaning: build + package + release code to existing Web App.
+Wait rule: do not run restart/config commands while this deployment is in progress.
 Checkpoint: `/docs` endpoint loads.
 
 ## Card 4 — Validate behavior

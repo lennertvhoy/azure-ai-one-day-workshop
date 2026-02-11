@@ -260,6 +260,8 @@ az webapp config appsettings set -g $RG -n $APP --settings `
   AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-deployment/)"
 ```
 
+⏱️ **Wait 30–60 seconds** before starting deployment (SCM/config stabilization).
+
 **Checkpoint:** In Azure Portal → Web App → Configuration, values show as Key Vault references (not plain text).
 
 > 📸 **Screenshot suggestion (L1-S06):** Web App Configuration page showing Key Vault reference format for app settings.
@@ -277,6 +279,8 @@ For class speed, use:
 ```powershell
 az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON:3.11"
 ```
+
+⏱️ **Wait for deployment to finish completely**. Avoid restart/config changes while deployment is running.
 
 ### Bash (WSL/macOS/Linux)
 ```bash

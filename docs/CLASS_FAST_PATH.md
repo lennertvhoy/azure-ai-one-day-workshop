@@ -47,6 +47,8 @@ az webapp config appsettings set -g $RG -n $APP --settings `
   AZURE_OPENAI_DEPLOYMENT="@Microsoft.KeyVault(SecretUri=https://$KV.vault.azure.net/secrets/azure-openai-deployment/)"
 ```
 
+⏱️ **Wait 30–60 seconds before the next command block** (let SCM/config settle).
+
 ### 2) (Optional) Verify locally first, then deploy Lab 1 app
 ```powershell
 # optional local run
@@ -63,6 +65,8 @@ Then deploy:
 ```powershell
 az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON:3.11"
 ```
+
+⏱️ **Wait until deploy completes**. Do **not** run restart/config commands during deploy.
 
 ### 3) Validate Lab 1
 Open:
