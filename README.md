@@ -4,6 +4,7 @@ Audience: Belgian technical professionals with **some Azure**.
 
 ## Start here (choose one path)
 - **Live class delivery (recommended):** `docs/CLASS_FAST_PATH.md`
+- **Student canonical reproducible path (Windows, end-to-end):** `docs/STUDENT_REPRO_PLAYBOOK.md`
 - **Self-serve full setup:** `infra/RESOURCE_SETUP.md` + `infra/iac/README.md`
 - **Deterministic Lab 1 reproduction path (Windows):** `docs/REPRODUCIBLE_PATH.md`
 
