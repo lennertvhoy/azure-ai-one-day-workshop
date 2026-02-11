@@ -301,6 +301,7 @@ az webapp up -g $RG -n $APP -l $LOCATION --runtime "PYTHON|3.11"
 - `https://$APP.azurewebsites.net/health` returns `{"ok":true}`
 - `https://$APP.azurewebsites.net/docs` loads (if FastAPI)
 - `POST /intake` returns structured JSON
+- If AOAI connectivity is down, fallback mode still returns valid JSON shape (`routing.mode = "fallback"`)
 
 Quick test payload:
 ```json
