@@ -313,10 +313,21 @@ cd C:\Users\lennertvhoy\azure-ai-one-day-workshop\labs\lab2-rag-policy-bot
 az webapp up -g $RG -n $APP2 -l $LOCATION --runtime "PYTHON:3.11"
 ```
 
-### 4.6 Validate
+### 4.6 Set startup command (required for this repo layout)
+Because the app entrypoint is `app/main.py` (not root `app.py`), set startup explicitly:
+
+```powershell
+az webapp config set -g $RG -n $APP2 --startup-file "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+az webapp restart -g $RG -n $APP2
+Start-Sleep -Seconds 20
+```
+
+### 4.7 Validate
 - `https://$APP2.azurewebsites.net/health` should return `{"ok":true}`
 - Open `https://$APP2.azurewebsites.net/docs`
 - Test `POST /chat` with a policy question
+
+If you see the default "Hey, Python developers" page, startup command is missing or not applied yet.
 
 **Hardening (recommended after class):**
 - Use a **Query Key** for runtime (`SEARCH_API_KEY`) and keep admin key only for ingestion.
