@@ -20,7 +20,8 @@ Use this flow for each participant machine:
 
 1. **Install Git (winget):**
    - Open PowerShell **as Administrator**
-   - Run: `winget install --id Git.Git --exact --silent --accept-source-agreements --accept-package-agreements`
+   - Run: `winget install --id Git.Git --exact --source winget --silent --accept-source-agreements --accept-package-agreements`
+   - If source certificate issues appear, run: `winget source reset --force` and retry.
 2. **Clone repo:**
    - `git clone https://github.com/lennertvhoy/azure-ai-one-day-workshop.git`
    - `cd azure-ai-one-day-workshop`
