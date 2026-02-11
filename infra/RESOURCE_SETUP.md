@@ -81,8 +81,10 @@ az keyvault create `
   --enable-rbac-authorization true
 
 az appservice plan create --name $PLAN --resource-group $RG --sku B1 --is-linux
-az webapp create --name $APP --resource-group $RG --plan $PLAN --runtime "PYTHON|3.11"
+az webapp create --name $APP --resource-group $RG --plan $PLAN --runtime "PYTHON:3.11"
 ```
+
+> Note (Windows PowerShell): use `PYTHON:3.11`. Some shells mis-handle `PYTHON|3.11`.
 
 ### Bash commands (WSL)
 ```bash
