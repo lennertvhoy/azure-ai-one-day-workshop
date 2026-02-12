@@ -54,11 +54,11 @@ log() {
         ERROR) color="$RED" ;;
         DEBUG) color='\033[0;90m' ;;
     esac
-    echo -e "${color}[$level]${NC} $message"
+    echo -e "${color}[$level]${NC} $message" >&2
 }
 
 log_success() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}✓${NC} $1" >&2
 }
 
 log_error_exit() {
@@ -391,39 +391,117 @@ cmd_validate() {
 
 # ============== Create Command ==============
 # ============== Student Management ==============
+# Output JSON result for student onboarding
+# Returns strict JSON contract: email, objectId, userType, provisioningAction, status, errorCode, errorMessage
+output_student_json() {
+    local email="$1"
+    local object_id="$2"
+    local user_type="$3"
+    local provisioning_action="$4"
+    local status="$5"
+    local error_code="$6"
+    local error_message="$7"
+    
+    # Output JSON to stdout (machine-readable)
+    cat <<EOF
+{"email":"$email","objectId":"$object_id","userType":"$user_type","provisioningAction":"$provisioning_action","status":"$status","errorCode":"$error_code","errorMessage":"$error_message"}
+EOF
+}
+
 cmd_invite_student() {
     if [[ -z "$EMAIL" ]]; then
         log_error_exit "Student email is required. Use --email <email>"
     fi
     
-    log "INFO" "Inviting student: $EMAIL"
+    log "INFO" "Processing student: $EMAIL"
     
-
+    # Step 1: Try to lookup existing user
+    log "INFO" "Looking up existing user: $EMAIL"
+    
+    local user_lookup_output
+    local lookup_exit_code=0
+    
+    # Try to get existing user info
+    user_lookup_output=$(az ad user show --id "$EMAIL" 2>&1) || lookup_exit_code=$?
+    
+    if [[ $lookup_exit_code -eq 0 ]] && [[ -n "$user_lookup_output" ]]; then
+        # User exists - extract information
+        local object_id
+        local user_type
+        local user_principal_name
+        local display_name
+        
+        object_id=$(echo "$user_lookup_output" | jq -r '.id // empty')
+        user_type=$(echo "$user_lookup_output" | jq -r '.userType // "member"')
+        user_principal_name=$(echo "$user_lookup_output" | jq -r '.userPrincipalName // empty')
+        display_name=$(echo "$user_lookup_output" | jq -r '.displayName // empty')
+        
+        if [[ -n "$object_id" ]]; then
+            log "INFO" "Found existing user: $EMAIL (Object ID: $object_id, Type: $user_type)"
+            log_success "User $EMAIL is an existing user"
+            
+            # Output JSON result to stdout
+            output_student_json "$EMAIL" "$object_id" "$user_type" "existing_user" "success" "" ""
+            return $EXIT_SUCCESS
+        fi
+    fi
+    
+    # Step 2: User not found - invite via Graph API
+    log "INFO" "User not found. Inviting new user: $EMAIL"
+    
     local invite_output
+    local invite_exit_code=0
+    
     # Use Microsoft Graph API to create guest invitation
     if ! invite_output=$(az rest --method POST \
         --uri "https://graph.microsoft.com/v1.0/invitations" \
         --body "{\"invitedUserEmailAddress\": \"$EMAIL\", \"inviteRedirectUrl\": \"https://myapps.microsoft.com\"}" \
         -o json 2>&1); then
-        log_error_exit "Failed to invite student: $invite_output" $EXIT_AZURE_ERROR
+        invite_exit_code=$?
+    fi
+    
+    # Check for errors in response
+    local error_message
+    if echo "$invite_output" | jq -e '.error' >/dev/null 2>&1; then
+        error_message=$(echo "$invite_output" | jq -r '.error.message // "Unknown error"')
+        log "ERROR" "Failed to invite student: $error_message"
+        output_student_json "$EMAIL" "" "" "invite_failed" "error" "$invite_exit_code" "$error_message"
+        return $EXIT_AZURE_ERROR
     fi
     
     local object_id
     object_id=$(echo "$invite_output" | jq -r '.invitedUser.id // empty')
     
+    # If object_id not in response, try to resolve it via lookup
     if [[ -z "$object_id" ]]; then
-        # Fallback for some CLI versions
-        object_id=$(echo "$invite_output" | jq -r '.id // empty')
+        log "INFO" "Object ID not in invite response, resolving via lookup..."
+        
+        # Wait and retry lookup
+        local retry_count=0
+        local max_retries=5
+        
+        while [[ -z "$object_id" ]] && [[ $retry_count -lt $max_retries ]]; do
+            sleep 2
+            user_lookup_output=$(az ad user show --id "$EMAIL" 2>&1) || true
+            object_id=$(echo "$user_lookup_output" | jq -r '.id // empty')
+            retry_count=$((retry_count + 1))
+            log "DEBUG" "Retry $retry_count/$max_retries: looking up $EMAIL"
+        done
+        
+        if [[ -z "$object_id" ]]; then
+            error_message="Failed to resolve Object ID after invitation"
+            log "ERROR" "$error_message"
+            output_student_json "$EMAIL" "" "" "invite_failed" "error" "1" "$error_message"
+            return $EXIT_AZURE_ERROR
+        fi
     fi
     
-    if [[ -z "$object_id" ]]; then
-        log_error_exit "Failed to extract Object ID from invitation output: $invite_output" $EXIT_AZURE_ERROR
-    fi
+    local user_type="guest"
     
     log_success "Invited student $EMAIL (Object ID: $object_id)"
     
-    # Return JSON for the TUI to parse
-    echo "$invite_output"
+    # Output JSON result to stdout
+    output_student_json "$EMAIL" "$object_id" "$user_type" "invited" "success" "" ""
     
     return $EXIT_SUCCESS
 }
@@ -1097,6 +1175,7 @@ COMMANDS:
     destroy         Destroy an AVD lab environment
     status          Show status of an AVD lab environment
     estimate-cost   Estimate cost for running a lab
+    invite-student  Invite a student to access AVD lab (looks up existing or invites new)
     help            Show this help message
 
 OPTIONS:
@@ -1104,6 +1183,7 @@ OPTIONS:
     --participant <slug>  Participant slug (required for create; can be used for destroy/status)
     --name <lab-id>       Lab ID (for destroy/status; can also use --lab-id)
     --lab-id <id>         Lab ID (for destroy/status)
+    --email <email>       Student email (required for invite-student)
     --ttl <duration>      Time-to-live for the lab (e.g., '8h', '1d')
     --hours <number>      Hours for cost estimation
     --yes                 Skip confirmation prompts
@@ -1128,6 +1208,9 @@ EXAMPLES:
 
     # Estimate cost for 8 hours
     ./avd-lab.sh estimate-cost --config config/lab-dev.json --hours 8
+
+    # Invite a student (looks up existing user or invites new)
+    ./avd-lab.sh invite-student --email student@example.com
 
     # Destroy a lab by participant
     ./avd-lab.sh destroy --participant lenny --yes

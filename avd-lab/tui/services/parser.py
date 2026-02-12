@@ -88,6 +88,19 @@ class CostEstimate:
 
 
 @dataclass
+class StudentInviteResult:
+    """Parsed student invite result from avd-lab.sh JSON output."""
+    email: str
+    object_id: Optional[str] = None
+    user_type: Optional[str] = None  # "member" or "guest"
+    provisioning_action: Optional[str] = None  # "existing_user", "invited", "invite_failed"
+    status: Optional[str] = None  # "success" or "error"
+    error_code: Optional[str] = None
+    error_message: Optional[str] = None
+    success: bool = False
+
+
+@dataclass
 class LabListItem:
     """Lab info for dashboard listing."""
     lab_id: str
@@ -414,6 +427,45 @@ class OutputParser:
         
         if result.total_cost:
             result.success = True
+        
+        return result
+    
+    def parse_student_invite(self, output: str) -> StudentInviteResult:
+        """
+        Parse student invite JSON output from avd-lab.sh.
+        
+        The shell script outputs JSON in the format:
+        {"email":"...","objectId":"...","userType":"...","provisioningAction":"...","status":"...","errorCode":"...","errorMessage":"..."}
+        
+        Args:
+            output: Raw output string from the invite-student command
+            
+        Returns:
+            StudentInviteResult with parsed fields
+        """
+        result = StudentInviteResult(email="")
+        
+        # Find JSON in output (may have log lines before/after)
+        json_match = re.search(r'\{[^{}]*\}', output)
+        if not json_match:
+            return result
+        
+        try:
+            data = json.loads(json_match.group())
+        except json.JSONDecodeError:
+            return result
+        
+        # Parse required fields
+        result.email = data.get('email', '')
+        result.object_id = data.get('objectId') or None
+        result.user_type = data.get('userType') or None
+        result.provisioning_action = data.get('provisioningAction') or None
+        result.status = data.get('status') or None
+        result.error_code = data.get('errorCode') or None
+        result.error_message = data.get('errorMessage') or None
+        
+        # Determine success
+        result.success = result.status == 'success'
         
         return result
     
