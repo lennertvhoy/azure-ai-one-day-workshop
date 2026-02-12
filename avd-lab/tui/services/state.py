@@ -13,6 +13,18 @@ from typing import Optional
 
 
 @dataclass
+class Job:
+    """Represents a background operation."""
+    id: str
+    type: str  # create, destroy, validate, refresh
+    target: str  # lab_id or participant
+    status: str = "queued"  # queued, running, succeeded, failed, cancelled
+    start_time: Optional[str] = None
+    duration: Optional[str] = None
+    last_log: str = ""
+    errors: list[str] = field(default_factory=list)
+
+@dataclass
 class UIState:
     """UI state data model."""
     recent_participants: list[str] = field(default_factory=list)
@@ -25,10 +37,14 @@ class UIState:
     last_rg_mode: str = "new_per_lab"
     recent_rg_names: list[str] = field(default_factory=list)
     
+    # Active/Recent jobs (not persisted normally, but we keep in session)
+    jobs: list[Job] = field(default_factory=list)
+
     # Limits
     MAX_RECENT_PARTICIPANTS = 10
     MAX_RECENT_LAB_IDS = 20
     MAX_RECENT_RG_NAMES = 10
+    MAX_JOBS = 50
 
 
 class StateManager:
@@ -203,6 +219,29 @@ class StateManager:
     def get_recent_rg_names(self) -> list[str]:
         """Get list of recent RG names."""
         return self._state.recent_rg_names.copy()
+
+    # === Job management ===
+
+    def add_job(self, job: Job) -> None:
+        """Add a job to the session."""
+        self._state.jobs.insert(0, job)
+        if len(self._state.jobs) > UIState.MAX_JOBS:
+            self._state.jobs.pop()
+        # We don't persist jobs to disk normally
+    
+    def update_job(self, job_id: str, **kwargs) -> Optional[Job]:
+        """Update a job's attributes."""
+        for job in self._state.jobs:
+            if job.id == job_id:
+                for key, value in kwargs.items():
+                    if hasattr(job, key):
+                        setattr(job, key, value)
+                return job
+        return None
+
+    def get_jobs(self) -> list[Job]:
+        """Get all jobs."""
+        return self._state.jobs
 
     # === Reset ===
     

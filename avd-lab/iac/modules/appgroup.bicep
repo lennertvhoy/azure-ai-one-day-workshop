@@ -51,6 +51,22 @@ resource workspaceDag 'Microsoft.DesktopVirtualization/workspaces/applicationGro
   }
 }
 
+@description('Array of Entra ID object IDs for students to grant access')
+param studentObjectIds array = []
+
+// ============== RBAC Support ==============
+var desktopUserRoleId = '1d18fff4-a54a-4aad-95ee-f716619069ff' // Desktop Virtualization User
+
+resource roleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (objectId, i) in studentObjectIds: {
+  scope: dag
+  name: guid(dag.id, objectId, desktopUserRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', desktopUserRoleId)
+    principalId: objectId
+    principalType: 'User'
+  }
+}]
+
 // ============== Outputs ==============
 output dagId string = dag.id
 output dagName string = dag.name

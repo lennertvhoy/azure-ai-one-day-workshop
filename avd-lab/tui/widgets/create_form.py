@@ -21,10 +21,12 @@ from textual.widgets import (
     Select,
     RadioButton,
     RadioSet,
+    DataTable,
 )
 from textual.containers import Grid
 
 from services.cli_runner import CliRunner
+from services.student_service import StudentService
 
 
 class CreateLabForm(ModalScreen):
@@ -140,6 +142,7 @@ class CreateLabForm(ModalScreen):
     subscription_id: reactive[Optional[str]] = reactive(None)
     rg_mode: reactive[str] = reactive("new_per_lab")
     rg_name: reactive[Optional[str]] = reactive(None)
+    student_ids: reactive[list[str]] = reactive([])
     
     # Validation state
     participant_valid: reactive[bool] = reactive(False)
@@ -157,10 +160,12 @@ class CreateLabForm(ModalScreen):
         last_subscription_id: Optional[str] = None,
         last_rg_mode: str = "new_per_lab",
         recent_rg_names: Optional[list[str]] = None,
+        student_service: Optional[StudentService] = None,
         **kwargs
     ):
         super().__init__(**kwargs)
         self._cli = cli_runner
+        self._students = student_service
         self._default_config = default_config
         self._recent_participants = recent_participants or []
         self._last_ttl = last_ttl
@@ -226,6 +231,10 @@ class CreateLabForm(ModalScreen):
                 )
                 yield Static("", id="rg-error", classes="error")
 
+                yield Label("Assigned Students:", classes="field-label")
+                yield DataTable(id="students-selection-table", cursor_type="row", zebra_stripes=True)
+                yield Static("Select students by clicking/Enter (Space toggles)", id="student-help")
+
                 with Container(classes="preview"):
                     yield Label("Preview", classes="preview-title")
                     yield Static("", id="preview-lab-id")
@@ -256,7 +265,39 @@ class CreateLabForm(ModalScreen):
         # Load data
         import asyncio
         asyncio.create_task(self._load_subscriptions())
+        self._load_students()
     
+    def _load_students(self) -> None:
+        """Load students from service."""
+        table = self.query_one("#students-selection-table", DataTable)
+        table.add_columns("?", "Email")
+        if self._students:
+            for student in self._students.get_students():
+                table.add_row("☐", student.email)
+    
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle student selection."""
+        if event.data_table.id == "students-selection-table":
+            table = event.data_table
+            row = table.get_row_at(event.cursor_coordinate.row)
+            email = row[1]
+            status = row[0]
+            
+            new_status = "☑" if status == "☐" else "☐"
+            table.update_cell_at(event.cursor_coordinate, new_status)
+            
+            if new_status == "☑":
+                # Get Object ID
+                obj_id = self._students.get_object_id_by_email(email)
+                if obj_id and obj_id not in self.student_ids:
+                    self.student_ids.append(obj_id)
+            else:
+                obj_id = self._students.get_object_id_by_email(email)
+                if obj_id in self.student_ids:
+                    self.student_ids.remove(obj_id)
+            
+            self._update_preview()
+
     async def _load_subscriptions(self) -> None:
         """Load subscriptions from Azure."""
         subs = await self._cli.list_subscriptions()
@@ -373,7 +414,8 @@ class CreateLabForm(ModalScreen):
                     self.ttl,
                     self.subscription_id,
                     self.rg_mode,
-                    self.rg_name
+                    self.rg_name,
+                    self.student_ids
                 ))
         elif event.button.id == "cancel-btn":
             self.dismiss()

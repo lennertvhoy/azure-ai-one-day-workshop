@@ -96,6 +96,9 @@ class LabListItem:
     location: str
     expiry: str
     status: str = "unknown"
+    workspace_url: Optional[str] = None
+    host_pool: Optional[str] = None
+    status_details: Optional[str] = None
 
 
 class OutputParser:
@@ -440,17 +443,47 @@ class OutputParser:
                 for resource in resources:
                     tags = resource.get('tags', {})
                     lab_id = tags.get('lab-id')
-                    if lab_id and tags.get('managed-by') == 'avd-lab-tool':
-                        if lab_id not in lab_groups:
-                            lab_groups[lab_id] = {
-                                'lab_id': lab_id,
-                                'participant': tags.get('participant', 'unknown'),
-                                'resource_group': resource.get('resourceGroup', 'unknown'),
-                                'location': resource.get('location', 'unknown'),
-                                'expiry': tags.get('expiry', 'unknown'),
-                            }
-                
+                    if not lab_id or tags.get('managed-by') != 'avd-lab-tool':
+                        continue
+
+                    if lab_id not in lab_groups:
+                        lab_groups[lab_id] = {
+                            'lab_id': lab_id,
+                            'participant': 'unknown',
+                            'resource_group': 'unknown',
+                            'location': 'unknown',
+                            'expiry': 'never',
+                            'workspace_url': None,
+                            'host_pool': None,
+                        }
+                    
+                    # Consolidate data
+                    current = lab_groups[lab_id]
+                    if tags.get('participant') and current['participant'] == 'unknown':
+                        current['participant'] = tags['participant']
+                    if resource.get('resourceGroup') and current['resource_group'] == 'unknown':
+                        current['resource_group'] = resource['resourceGroup']
+                    if resource.get('location') and current['location'] == 'unknown':
+                        current['location'] = resource['location']
+                    if tags.get('expiry') and current['expiry'] == 'never':
+                        current['expiry'] = tags['expiry']
+                    
+                    # Workspace URL - strip ALL whitespace/newlines that causes truncation
+                    val = tags.get('workspace-url') or tags.get('workspace_url')
+                    if val:
+                        # Replace all whitespace characters anywhere in the string
+                        current['workspace_url'] = re.sub(r'\s+', '', str(val))
+                    
+                    # Resource-type specific
+                    res_type = resource.get('type', '').lower()
+                    if 'hostpools' in res_type:
+                        current['host_pool'] = resource.get('name')
+                    elif 'workspaces' in res_type:
+                        if tags.get('workspace-url'):
+                            current['workspace_url'] = re.sub(r'\s+', '', str(tags['workspace-url']))
+
                 for lab_data in lab_groups.values():
+                    default_url = "https://client.wvd.microsoft.com/arm/webclient/index.html"
                     labs.append(LabListItem(
                         lab_id=lab_data['lab_id'],
                         participant=lab_data['participant'],
@@ -458,6 +491,8 @@ class OutputParser:
                         location=lab_data['location'],
                         expiry=lab_data['expiry'],
                         status=self._determine_status(lab_data['expiry']),
+                        workspace_url=lab_data.get('workspace_url') or default_url,
+                        host_pool=lab_data.get('host_pool'),
                     ))
         except (json.JSONDecodeError, KeyError):
             pass

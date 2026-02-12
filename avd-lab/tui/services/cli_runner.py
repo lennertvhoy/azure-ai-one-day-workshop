@@ -305,6 +305,7 @@ class CliRunner:
         subscription_id: Optional[str] = None,
         rg_mode: str = "new_per_lab",
         rg_name: Optional[str] = None,
+        student_ids: Optional[list[str]] = None,
         on_output: Optional[Callable[[str], None]] = None,
     ) -> CommandResult:
         """
@@ -359,7 +360,10 @@ class CliRunner:
             
         if rg_name:
             args.extend(["--rg-name", rg_name])
-        
+            
+        if student_ids:
+            args.extend(["--students", ",".join(student_ids)])
+            
         return await self.run_command(
             *args,
             on_stdout=on_output,
@@ -448,6 +452,25 @@ class CliRunner:
             on_stderr=on_output,
         )
     
+    async def invite_student(
+        self,
+        email: str,
+        on_output: Optional[Callable[[str], None]] = None,
+    ) -> CommandResult:
+        """
+        Run invite-student command.
+        
+        Args:
+            email: Student email address
+            on_output: Optional callback for output lines
+        """
+        return await self.run_command(
+            "invite-student", 
+            "--email", email,
+            on_stdout=on_output, 
+            on_stderr=on_output
+        )
+
     async def estimate_cost(
         self,
         config_path: str,

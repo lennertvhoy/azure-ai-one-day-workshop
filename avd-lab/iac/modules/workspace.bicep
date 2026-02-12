@@ -31,4 +31,4 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
 // ============== Outputs ==============
 output workspaceId string = workspace.id
 output workspaceName string = workspace.name
-output workspaceUrl string = 'https://rdweb.wvd.microsoft.com/api/arm/feeddiscovery'
+output workspaceUrl string = 'https://client.wvd.microsoft.com/arm/webclient/index.html'

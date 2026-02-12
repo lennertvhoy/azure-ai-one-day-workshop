@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+.venvs/
+.env
+
+# Local State
+tui/.state/students.json
+logs/
+temp-params.json

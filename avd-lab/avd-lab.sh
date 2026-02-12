@@ -79,6 +79,8 @@ parse_arguments() {
     SUBSCRIPTION=""
     RG_MODE="new_per_lab" # new_per_lab | existing
     RG_NAME=""
+    EMAIL=""
+    STUDENTS=""
     YES=false
     DRY_RUN=false
     
@@ -110,6 +112,14 @@ parse_arguments() {
                 ;;
             --subscription)
                 SUBSCRIPTION="$2"
+                shift 2
+                ;;
+            --email)
+                EMAIL="$2"
+                shift 2
+                ;;
+            --students)
+                STUDENTS="$2"
                 shift 2
                 ;;
             --rg-mode)
@@ -380,6 +390,44 @@ cmd_validate() {
 }
 
 # ============== Create Command ==============
+# ============== Student Management ==============
+cmd_invite_student() {
+    if [[ -z "$EMAIL" ]]; then
+        log_error_exit "Student email is required. Use --email <email>"
+    fi
+    
+    log "INFO" "Inviting student: $EMAIL"
+    
+
+    local invite_output
+    # Use Microsoft Graph API to create guest invitation
+    if ! invite_output=$(az rest --method POST \
+        --uri "https://graph.microsoft.com/v1.0/invitations" \
+        --body "{\"invitedUserEmailAddress\": \"$EMAIL\", \"inviteRedirectUrl\": \"https://myapps.microsoft.com\"}" \
+        -o json 2>&1); then
+        log_error_exit "Failed to invite student: $invite_output" $EXIT_AZURE_ERROR
+    fi
+    
+    local object_id
+    object_id=$(echo "$invite_output" | jq -r '.invitedUser.id // empty')
+    
+    if [[ -z "$object_id" ]]; then
+        # Fallback for some CLI versions
+        object_id=$(echo "$invite_output" | jq -r '.id // empty')
+    fi
+    
+    if [[ -z "$object_id" ]]; then
+        log_error_exit "Failed to extract Object ID from invitation output: $invite_output" $EXIT_AZURE_ERROR
+    fi
+    
+    log_success "Invited student $EMAIL (Object ID: $object_id)"
+    
+    # Return JSON for the TUI to parse
+    echo "$invite_output"
+    
+    return $EXIT_SUCCESS
+}
+
 cmd_create() {
     log "INFO" "Starting AVD lab creation..."
     
@@ -527,6 +575,12 @@ EOF
     
     local params_file="${SCRIPT_DIR}/temp-params.json"
     
+    # Build student Object IDs array if provided
+    local student_ids_json="[]"
+    if [[ -n "$STUDENTS" ]]; then
+        student_ids_json=$(echo "$STUDENTS" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
+    fi
+
     cat > "$params_file" << EOF
 {
     "resourceGroupName": {
@@ -576,6 +630,9 @@ EOF
     },
     "expiry": {
         "value": "$expiry"
+    },
+    "studentObjectIds": {
+        "value": $student_ids_json
     }
 }
 EOF
@@ -1117,6 +1174,9 @@ case "$COMMAND" in
         ;;
     estimate-cost)
         cmd_estimate_cost
+        ;;
+    invite-student)
+        cmd_invite_student
         ;;
     help|--help|-h)
         show_help

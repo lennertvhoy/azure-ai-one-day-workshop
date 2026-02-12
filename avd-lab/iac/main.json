@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.40.2.10011",
-      "templateHash": "777426385202114572"
+      "templateHash": "3077366171216734073"
     }
   },
   "parameters": {
@@ -145,6 +145,13 @@
       "metadata": {
         "description": "Expiry time for the lab environment (ISO8601)"
       }
+    },
+    "studentObjectIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Array of Entra ID object IDs for students to grant access"
+      }
     }
   },
   "variables": {
@@ -161,7 +168,7 @@
       "apiVersion": "2021-04-01",
       "name": "[parameters('resourceGroupName')]",
       "location": "[parameters('location')]",
-      "tags": "[union(parameters('tags'), createObject('expiry', parameters('expiry'), 'lab-name', parameters('namingSuffix')))]"
+      "tags": "[union(parameters('tags'), createObject('expiry', parameters('expiry'), 'lab-name', parameters('namingSuffix'), 'workspace-url', 'https://client.wvd.microsoft.com/arm/webclient/index.html'))]"
     },
     {
       "type": "Microsoft.Resources/deployments",
@@ -553,7 +560,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.40.2.10011",
-              "templateHash": "13981659592221715972"
+              "templateHash": "9201073743010220399"
             }
           },
           "parameters": {
@@ -615,7 +622,7 @@
             },
             "workspaceUrl": {
               "type": "string",
-              "value": "https://rdweb.wvd.microsoft.com/api/arm/feeddiscovery"
+              "value": "https://client.wvd.microsoft.com/arm/webclient/index.html"
             }
           }
         }
@@ -649,6 +656,9 @@
           },
           "tags": {
             "value": "[union(parameters('tags'), createObject('expiry', parameters('expiry'), 'lab-name', parameters('namingSuffix')))]"
+          },
+          "studentObjectIds": {
+            "value": "[parameters('studentObjectIds')]"
           }
         },
         "template": {
@@ -658,7 +668,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.40.2.10011",
-              "templateHash": "17506867634262993757"
+              "templateHash": "3407957106661000822"
             }
           },
           "parameters": {
@@ -712,7 +722,17 @@
               "metadata": {
                 "description": "Tags to apply to resources"
               }
+            },
+            "studentObjectIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Array of Entra ID object IDs for students to grant access"
+              }
             }
+          },
+          "variables": {
+            "desktopUserRoleId": "1d18fff4-a54a-4aad-95ee-f716619069ff"
           },
           "resources": [
             {
@@ -734,6 +754,24 @@
               "name": "[format('{0}/{1}', parameters('workspaceName'), parameters('dagName'))]",
               "properties": {
                 "applicationGroupPath": "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('dagName'))]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('dagName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "roleAssignments",
+                "count": "[length(parameters('studentObjectIds'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('dagName'))]",
+              "name": "[guid(resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('dagName')), parameters('studentObjectIds')[copyIndex()], variables('desktopUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('desktopUserRoleId'))]",
+                "principalId": "[parameters('studentObjectIds')[copyIndex()]]",
+                "principalType": "User"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('dagName'))]"
@@ -817,6 +855,9 @@
           },
           "tags": {
             "value": "[union(parameters('tags'), createObject('expiry', parameters('expiry'), 'lab-name', parameters('namingSuffix')))]"
+          },
+          "studentObjectIds": {
+            "value": "[parameters('studentObjectIds')]"
           }
         },
         "template": {
@@ -827,7 +868,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.40.2.10011",
-              "templateHash": "6618007618693635954"
+              "templateHash": "11111658535563459076"
             }
           },
           "parameters": {
@@ -931,6 +972,13 @@
               "metadata": {
                 "description": "Tags to apply to resources"
               }
+            },
+            "studentObjectIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Array of Entra ID object IDs for students to grant access"
+              }
             }
           },
           "variables": {
@@ -950,7 +998,8 @@
                 "count": "[length(range(0, parameters('numberOfHosts')))]",
                 "input": "[format('{0}-disk-{1}-{2}', parameters('namingPrefix'), parameters('namingSuffix'), padLeft(string(add(range(0, parameters('numberOfHosts'))[copyIndex('diskNames')], 1)), 2, '0'))]"
               }
-            ]
+            ],
+            "vmUserLoginRoleId": "fb87f359-0f04-4447-9276-8c9006767753"
           },
           "resources": {
             "hostPool": {
@@ -1107,6 +1156,20 @@
                 "avdAgentExtension",
                 "vms"
               ]
+            },
+            "roleAssignments": {
+              "copy": {
+                "name": "roleAssignments",
+                "count": "[length(parameters('studentObjectIds'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "name": "[guid(resourceGroup().id, parameters('studentObjectIds')[copyIndex()], variables('vmUserLoginRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('vmUserLoginRoleId'))]",
+                "principalId": "[parameters('studentObjectIds')[copyIndex()]]",
+                "principalType": "User"
+              }
             }
           },
           "outputs": {

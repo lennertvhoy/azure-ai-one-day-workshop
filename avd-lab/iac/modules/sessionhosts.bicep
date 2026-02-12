@@ -189,6 +189,21 @@ resource avdMonitoringExtension 'Microsoft.Compute/virtualMachines/extensions@20
   ]
 }]
 
+@description('Array of Entra ID object IDs for students to grant access')
+param studentObjectIds array = []
+
+// ============== RBAC Support ==============
+var vmUserLoginRoleId = 'fb87f359-0f04-4447-9276-8c9006767753' // Virtual Machine User Login
+
+resource roleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (objectId, i) in studentObjectIds: {
+  name: guid(resourceGroup().id, objectId, vmUserLoginRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', vmUserLoginRoleId)
+    principalId: objectId
+    principalType: 'User'
+  }
+}]
+
 // ============== Outputs ==============
 output vmNames array = vmNames
 output vmIds array = map(vms, vm => vm.id)

@@ -13,6 +13,7 @@ Keys:
     v - Validate
     r - Refresh
     l - View logs
+    u - Manage students
     q - Quit
 """
 
@@ -45,17 +46,20 @@ from services.parser import (
     StatusResult,
     DestroyResult,
 )
-from services.state import StateManager
-
+from services.state import StateManager, Job
 from widgets.lab_table import LabTable
 from widgets.create_form import CreateLabForm
 from widgets.destroy_confirm import DestroyConfirmDialog
 from widgets.validation_view import ValidationView
 from widgets.log_panel import LogPanel
 from widgets.lab_details import LabDetailsDialog
+from widgets.lab_details_pane import LabDetailsPane
+from widgets.jobs_panel import JobsPanel
 from widgets.subscription_manager import SubscriptionManager
 from widgets.rg_manager import ResourceGroupManager
 from widgets.template_manager import TemplateManager
+from widgets.student_manager import StudentManager
+from services.student_service import StudentService
 
 
 class Dashboard(Screen):
@@ -75,18 +79,28 @@ class Dashboard(Screen):
     Dashboard {
         height: 1fr;
         width: 1fr;
+        background: #1e1e2e; /* Catppuccin Mocha Base */
+        color: #cdd6f4;      /* Catppuccin Mocha Text */
     }
     
     Dashboard .header {
         height: 1;
-        background: $primary;
+        background: #89b4fa; /* Catppuccin Blue */
+        color: #11111b;
         padding: 0 1;
+        text-style: bold;
     }
     
     Dashboard .status-bar {
         height: 1;
-        background: $surface-darken-1;
+        background: #313244;
         padding: 0 1;
+        color: #a6adc8;
+    }
+    
+    Dashboard #main-container {
+        height: 1fr;
+        width: 1fr;
     }
     
     Dashboard .table-container {
@@ -94,18 +108,16 @@ class Dashboard(Screen):
         width: 1fr;
     }
     
-    Dashboard .action-bar {
-        height: 3;
-        background: $surface-darken-1;
-        padding: 0 1;
-        align: center middle;
-    }
-    
     Dashboard .output-panel {
-        height: 14;
-        background: $surface-darken-2;
+        height: 4; /* Minimized by default */
+        background: #181825;
         padding: 0 1;
-        border-top: solid $primary;
+        border-top: solid #89b4fa;
+        transition: height 200ms;
+    }
+
+    Dashboard .output-panel.expanded {
+        height: 15;
     }
 
     Dashboard #output-scroll {
@@ -115,16 +127,11 @@ class Dashboard(Screen):
     
     Dashboard .output-title {
         text-style: bold;
-        margin-bottom: 0;
+        color: #89b4fa;
     }
     
     Dashboard .spinner {
-        color: $primary;
-    }
-    
-    Dashboard Button {
-        margin: 0 1;
-        min-width: 10;
+        color: #89b4fa;
     }
     """
     
@@ -133,11 +140,13 @@ class Dashboard(Screen):
         Binding("d", "destroy_lab", "Destroy"),
         Binding("v", "validate", "Validate"),
         Binding("r", "refresh", "Refresh"),
-        Binding("r", "refresh", "Refresh"),
-        Binding("s", "subscriptions", "Subscriptions"),
+        Binding("o", "open_link", "Open Link"),
+        Binding("l", "toggle_logs", "Toggle Logs"),
+        Binding("s", "subscriptions", "Subs"),
         Binding("g", "resource_groups", "RGs"),
-        Binding("t", "templates", "Templates"),
-        Binding("l", "logs", "Logs"),
+        Binding("t", "templates", "Tmpls"),
+        Binding("u", "students", "Users"),
+        Binding("b", "back", "Back"),
         Binding("q", "quit", "Quit"),
     ]
     
@@ -160,25 +169,19 @@ class Dashboard(Screen):
             yield Label("AVD Lab Manager")
         
         with Container(classes="status-bar"):
-            yield Label("", id="status-label")
+            yield Label("Ready", id="status-label")
         
-        with Container(classes="table-container"):
-            yield LabTable(id="lab-table")
+        with Horizontal(id="main-container"):
+            with Vertical(classes="table-container"):
+                yield LabTable(id="lab-table")
+            
+            yield LabDetailsPane(id="lab-details-pane")
+            yield JobsPanel(id="jobs-panel")
         
-        with Container(classes="output-panel"):
-            yield Label("Output", classes="output-title")
+        with Container(id="log-panel-container", classes="output-panel"):
+            yield Label("Output / Logs", classes="output-title")
             with VerticalScroll(id="output-scroll"):
                 yield Static("", id="output-display")
-        
-        with Horizontal(classes="action-bar"):
-            yield Button("Create (c)", id="create-btn", variant="success")
-            yield Button("Destroy (d)", id="destroy-btn", variant="error")
-            yield Button("Validate (v)", id="validate-btn", variant="primary")
-            yield Button("Refresh (r)", id="refresh-btn", variant="primary")
-            yield Button("Subs (s)", id="subs-btn", variant="default")
-            yield Button("RGs (g)", id="rgs-btn", variant="default")
-            yield Button("Tmpl (t)", id="tmpls-btn", variant="default")
-            yield Button("Logs (l)", id="logs-btn", variant="default")
         
         yield Footer()
     
@@ -218,6 +221,17 @@ class Dashboard(Screen):
         except Exception:
             return ""
 
+    def _update_jobs_display(self) -> None:
+        """Update jobs panel."""
+        try:
+            panel = self.query_one("#jobs-panel", JobsPanel)
+            panel.jobs = self._state.get_jobs()
+            # Auto-show panel if there are active jobs
+            active_jobs = [j for j in panel.jobs if j.status in ("queued", "running")]
+            panel.display = len(panel.jobs) > 0
+        except Exception:
+            pass
+
     def _update_table(self) -> None:
         """Update the lab table."""
         try:
@@ -238,12 +252,13 @@ class Dashboard(Screen):
             last_subscription_id=self._state.get_last_subscription_id(),
             last_rg_mode=self._state.get_last_rg_mode(),
             recent_rg_names=self._state.get_recent_rg_names(),
+            student_service=self.app.students,
         )
 
         def handle_create(result) -> None:
-            if result and isinstance(result, tuple) and len(result) == 6:
-                config_path, participant, ttl, sub_id, rg_mode, rg_name = result
-                self._do_create(config_path, participant, ttl, sub_id, rg_mode, rg_name)
+            if result and isinstance(result, tuple) and len(result) == 7:
+                config_path, participant, ttl, sub_id, rg_mode, rg_name, student_ids = result
+                self._do_create(config_path, participant, ttl, sub_id, rg_mode, rg_name, student_ids)
 
         self.app.push_screen(form, handle_create)
     
@@ -254,13 +269,23 @@ class Dashboard(Screen):
         ttl: str,
         subscription_id: Optional[str],
         rg_mode: str,
-        rg_name: Optional[str]
+        rg_name: Optional[str],
+        student_ids: Optional[list[str]] = None
     ) -> None:
-        """Execute create command."""
-        self._update_status("Creating lab...")
-        self.is_loading = True
+        """Execute create command with job tracking."""
+        job_id = f"create-{participant}-{datetime.now().strftime('%H%M%S')}"
+        job = Job(
+            id=job_id,
+            type="create",
+            target=participant,
+            status="running",
+            start_time=datetime.now().isoformat()
+        )
+        self._state.add_job(job)
+        self._update_jobs_display()
+        self._update_status(f"Starting create: {participant}")
         
-        # Save state
+        # Save config/state
         self._state.set_last_config_path(config_path)
         self._state.add_recent_participant(participant)
         self._state.set_last_ttl(ttl)
@@ -270,36 +295,41 @@ class Dashboard(Screen):
             self._state.add_recent_rg_name(rg_name)
         
         async def run_create():
+            start_time = datetime.now()
+            
+            def log_callback(line: str):
+                self._state.update_job(job_id, last_log=line)
+                self._update_jobs_display()
+
             result = await self._cli.create(
                 config_path, 
                 participant, 
                 ttl,
                 subscription_id=subscription_id,
                 rg_mode=rg_mode,
-                rg_name=rg_name
+                rg_name=rg_name,
+                student_ids=student_ids,
+                on_output=log_callback
             )
+            
+            end_time = datetime.now()
+            duration_str = str(end_time - start_time).split('.')[0]
             
             # Parse result
             create_result = self._parser.parse_create(result.stdout + "\n" + result.stderr)
             
             if create_result.success:
+                self._state.update_job(job_id, status="succeeded", duration=duration_str)
                 self._update_status(f"Lab created: {create_result.lab_id}")
-                self._update_output(
-                    f"Lab ID: {create_result.lab_id}\n"
-                    f"Participant: {create_result.participant}\n"
-                    f"Resource Group: {create_result.resource_group}\n"
-                    f"Expiry: {create_result.expiry}\n\n"
-                    f"To destroy: ./avd-lab.sh destroy --lab-id {create_result.lab_id} --yes"
-                )
                 if create_result.lab_id:
                     self._state.add_recent_lab_id(create_result.lab_id)
-                # Refresh the table
                 await self._refresh_labs()
             else:
+                self._state.update_job(job_id, status="failed", duration=duration_str, errors=create_result.errors or [result.stderr])
                 self._update_status("Create failed")
-                self._update_output(f"Error:\n{result.stderr}\n\n{result.stdout}")
+                self._update_output(f"Job {job_id} failed:\n{result.stderr}")
             
-            self.is_loading = False
+            self._update_jobs_display()
         
         asyncio.create_task(run_create())
     
@@ -318,65 +348,106 @@ class Dashboard(Screen):
         self.app.push_screen(dialog, handle_destroy)
     
     def _do_destroy(self, lab_id: str) -> None:
-        """Execute destroy command."""
-        self._update_status(f"Destroying lab {lab_id}...")
-        self.is_loading = True
+        """Execute destroy command with job tracking."""
+        job_id = f"destroy-{lab_id}-{datetime.now().strftime('%H%M%S')}"
+        job = Job(
+            id=job_id,
+            type="destroy",
+            target=lab_id,
+            status="running",
+            start_time=datetime.now().isoformat()
+        )
+        self._state.add_job(job)
+        self._update_jobs_display()
+        self._update_status(f"Destroying {lab_id}...")
         
         async def run_destroy():
-            result = await self._cli.destroy(lab_id=lab_id)
+            start_time = datetime.now()
             
-            # Parse result
+            def log_callback(line: str):
+                self._state.update_job(job_id, last_log=line)
+                self._update_jobs_display()
+
+            result = await self._cli.destroy(lab_id=lab_id, on_output=log_callback)
+            
+            end_time = datetime.now()
+            duration_str = str(end_time - start_time).split('.')[0]
+            
             destroy_result = self._parser.parse_destroy(result.stdout + "\n" + result.stderr)
             
             if destroy_result.success:
+                self._state.update_job(job_id, status="succeeded", duration=duration_str)
                 self._update_status(f"Lab destroyed: {lab_id}")
-                self._update_output(f"Lab {lab_id} has been destroyed.\n\nCommand: {result.command}")
-                # Refresh the table
                 await self._refresh_labs()
             else:
+                self._state.update_job(job_id, status="failed", duration=duration_str, errors=destroy_result.errors or [result.stderr])
                 self._update_status("Destroy failed")
-                self._update_output(f"Error:\n{result.stderr}\n\n{result.stdout}")
+                self._update_output(f"Destroy of {lab_id} failed:\n{result.stderr}")
             
-            self.is_loading = False
+            self._update_jobs_display()
         
         asyncio.create_task(run_destroy())
     
     def action_validate(self) -> None:
-        """Run validation and show results."""
+        """Run validation with job tracking."""
         config_path = self._state.get_last_config_path() or self._cli.DEFAULT_CONFIG
         
+        job_id = f"validate-{datetime.now().strftime('%H%M%S')}"
+        job = Job(
+            id=job_id,
+            type="validate",
+            target="config",
+            status="running",
+            start_time=datetime.now().isoformat()
+        )
+        self._state.add_job(job)
+        self._update_jobs_display()
         self._update_status("Running validation...")
-        self.is_loading = True
         
         async def run_validate():
+            start_time = datetime.now()
             result = await self._cli.validate(config_path)
+            duration_str = str(datetime.now() - start_time).split('.')[0]
             
-            # Parse result
             validation_result = self._parser.parse_validation(result.stdout + "\n" + result.stderr)
+            
+            if validation_result.success:
+                self._state.update_job(job_id, status="succeeded", duration=duration_str)
+                self._update_status("Validation passed")
+            else:
+                self._state.update_job(job_id, status="failed", duration=duration_str, errors=validation_result.errors)
+                self._update_status("Validation failed")
             
             # Show validation view
             view = ValidationView(result=validation_result, raw_output=result.stdout)
             self.app.push_screen(view)
-            
-            if validation_result.success:
-                self._update_status("Validation passed")
-            else:
-                self._update_status("Validation failed")
-            
-            self.is_loading = False
+            self._update_jobs_display()
         
         asyncio.create_task(run_validate())
-    
+
     def action_refresh(self) -> None:
-        """Refresh the lab list."""
+        """Refresh the lab list with job tracking."""
+        job_id = f"refresh-{datetime.now().strftime('%H%M%S')}"
+        job = Job(
+            id=job_id,
+            type="refresh",
+            target="all",
+            status="running",
+            start_time=datetime.now().isoformat()
+        )
+        self._state.add_job(job)
+        self._update_jobs_display()
         self._update_status("Refreshing...")
-        self.is_loading = True
         
         async def do_refresh():
+            start_time = datetime.now()
             await self._refresh_labs()
+            duration_str = str(datetime.now() - start_time).split('.')[0]
+            
+            self._state.update_job(job_id, status="succeeded", duration=duration_str)
             self._update_status(f"Refreshed - {len(self.labs)} labs found")
             self._state.update_refresh_time()
-            self.is_loading = False
+            self._update_jobs_display()
         
         asyncio.create_task(do_refresh())
     
@@ -460,24 +531,50 @@ class Dashboard(Screen):
         screen = TemplateManager(cli_runner=self._cli)
         self.app.push_screen(screen)
 
+    def action_students(self) -> None:
+        """Open student manager."""
+        from widgets.student_manager import StudentManager
+        screen = StudentManager(cli_runner=self._cli, student_service=self.app.students)
+        self.app.push_screen(screen)
+
     # === Event handlers ===
     
     def on_lab_table_lab_selected(self, event: LabTable.LabSelected) -> None:
         """Handle lab selection."""
         self.selected_lab = event.lab
         self._update_status(f"Selected: {event.lab.lab_id}")
-        
-    def on_lab_table_lab_details_requested(self, event: LabTable.LabDetailsRequested) -> None:
-        """Handle lab details request."""
-        self.selected_lab = event.lab
-        
-        dialog = LabDetailsDialog(lab=event.lab)
-        
-        def handle_details(result):
-            if result == "destroy":
-                self.action_destroy_lab()
-                
-        self.app.push_screen(dialog, handle_details)
+        # Update detail pane
+        try:
+            pane = self.query_one("#lab-details-pane", LabDetailsPane)
+            pane.lab = event.lab
+        except Exception:
+            pass
+
+    def on_lab_details_pane_destroy_requested(self, event: LabDetailsPane.DestroyRequested) -> None:
+        """Handle destroy request from the side pane."""
+        self.action_destroy_lab()
+
+    def action_open_link(self) -> None:
+        """Open primary link for selected lab."""
+        if not self.selected_lab:
+            self.notify("No lab selected", severity="warning")
+            return
+            
+        if self.selected_lab.workspace_url:
+            import webbrowser
+            import re
+            cleaned_url = re.sub(r'\s+', '', self.selected_lab.workspace_url)
+            webbrowser.open(cleaned_url)
+        else:
+            self.notify("No launch link available yet", severity="warning")
+
+    def action_toggle_logs(self) -> None:
+        """Toggle log panel expansion."""
+        try:
+            panel = self.query_one("#log-panel-container")
+            panel.toggle_class("expanded")
+        except Exception:
+            pass
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
@@ -519,6 +616,7 @@ class AvdLabTui(App):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.students = StudentService()
     
     def on_mount(self) -> None:
         """Mount the dashboard screen."""

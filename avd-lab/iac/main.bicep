@@ -70,6 +70,9 @@ param tags object = {
 @description('Expiry time for the lab environment (ISO8601)')
 param expiry string = newGuid()
 
+@description('Array of Entra ID object IDs for students to grant access')
+param studentObjectIds array = []
+
 // ============== Variables ==============
 var hostPoolName = '${namingPrefix}-hp-${namingSuffix}'
 var workspaceName = '${namingPrefix}-ws-${namingSuffix}'
@@ -85,6 +88,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   tags: union(tags, {
     'expiry': expiry
     'lab-name': namingSuffix
+    'workspace-url': 'https://client.wvd.microsoft.com/arm/webclient/index.html'
   })
 }
 
@@ -147,6 +151,7 @@ module dag 'modules/appgroup.bicep' = {
       'expiry': expiry
       'lab-name': namingSuffix
     })
+    studentObjectIds: studentObjectIds
   }
   dependsOn: [
     hostPool
@@ -177,6 +182,7 @@ module sessionHosts 'modules/sessionhosts.bicep' = {
       'expiry': expiry
       'lab-name': namingSuffix
     })
+    studentObjectIds: studentObjectIds
   }
   dependsOn: [
     network

@@ -182,14 +182,14 @@ class LabTable(Widget):
     
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         """Handle row selection."""
-        if event.row_index is not None and event.row_index < len(self._labs):
-            self.selected_lab = self._labs[event.row_index]
+        if event.cursor_row is not None and event.cursor_row < len(self._labs):
+            self.selected_lab = self._labs[event.cursor_row]
             self.post_message(self.LabSelected(self.selected_lab))
     
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Handle row double-click/enter."""
-        if event.row_index is not None and event.row_index < len(self._labs):
-            self.selected_lab = self._labs[event.row_index]
+        if event.cursor_row is not None and event.cursor_row < len(self._labs):
+            self.selected_lab = self._labs[event.cursor_row]
             self.post_message(self.LabDetailsRequested(self.selected_lab))
     
     def get_selected_lab(self) -> Optional[LabListItem]:
