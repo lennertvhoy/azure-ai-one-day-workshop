@@ -1,6 +1,6 @@
 # Azure AI — One Day Workshop (09:00–17:00)
 
-Audience: Belgian technical professionals with **some Azure**.
+Audience: Belgian technical professionals with **some Azure experience**.
 
 ## Start here (choose one path)
 - **Live class delivery (recommended):** `docs/CLASS_FAST_PATH.md`
