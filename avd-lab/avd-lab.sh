@@ -76,6 +76,9 @@ parse_arguments() {
     PARTICIPANT=""
     TTL=""
     HOURS=""
+    SUBSCRIPTION=""
+    RG_MODE="new_per_lab" # new_per_lab | existing
+    RG_NAME=""
     YES=false
     DRY_RUN=false
     
@@ -103,6 +106,18 @@ parse_arguments() {
                 ;;
             --hours)
                 HOURS="$2"
+                shift 2
+                ;;
+            --subscription)
+                SUBSCRIPTION="$2"
+                shift 2
+                ;;
+            --rg-mode)
+                RG_MODE="$2"
+                shift 2
+                ;;
+            --rg-name)
+                RG_NAME="$2"
                 shift 2
                 ;;
             --yes|-y)
@@ -251,6 +266,16 @@ check_azure_prerequisites() {
     
     local subscription_id
     local subscription_name
+    
+    # Switch subscription if requested
+    if [[ -n "$SUBSCRIPTION" ]]; then
+        log "INFO" "Switching context to subscription: $SUBSCRIPTION"
+        if ! az account set --subscription "$SUBSCRIPTION"; then
+             log_error_exit "Failed to set subscription context to '$SUBSCRIPTION'. Check permissions." $EXIT_AZURE_ERROR
+        fi
+    fi
+    
+    account=$(az account show)
     subscription_id=$(echo "$account" | jq -r '.id')
     subscription_name=$(echo "$account" | jq -r '.name')
     log_success "Subscription: $subscription_id ($subscription_name)"
@@ -367,6 +392,9 @@ cmd_create() {
     if [[ ! "$PARTICIPANT" =~ ^[a-z0-9-]+$ ]]; then
         log_error_exit "Participant slug must be lowercase alphanumeric with hyphens only"
     fi
+    if [[ ${#PARTICIPANT} -gt 20 ]]; then
+        log_error_exit "Participant slug too long (max 20 chars) to keep Azure resource names valid"
+    fi
     
     local config_json
     config_json=$(load_config "$CONFIG")
@@ -385,6 +413,29 @@ cmd_create() {
     lab_id=$(generate_lab_id "$course" "$PARTICIPANT")
     
     log "INFO" "Generated lab-id: $lab_id"
+    
+    # Determine Resource Group Strategy
+    local final_rg_name
+    
+    if [[ "$RG_MODE" == "existing" ]]; then
+        if [[ -z "$RG_NAME" ]]; then
+            log_error_exit "RG name is required when --rg-mode existing is used"
+        fi
+        
+        # Verify existing RG
+        log "INFO" "Verifying existing resource group: $RG_NAME"
+        if ! az group show --name "$RG_NAME" &>/dev/null; then
+             log_error_exit "Resource group '$RG_NAME' not found in current subscription"
+        fi
+        final_rg_name="$RG_NAME"
+        log_success "Using existing resource group: $final_rg_name"
+        
+    else
+        # New Per Lab Mode
+        # In new mode, we typically use the lab_id as the RG name for isolation
+        final_rg_name="$lab_id"
+        log "INFO" "Will create new resource group: $final_rg_name"
+    fi
     
     # Preflight checks
     check_existing_labs "$PARTICIPANT"
@@ -471,21 +522,24 @@ EOF
 )
     
     # Build parameters - use lab_id as resource group name and naming prefix
+    # Note: resourceGroupName param in main.bicep might dictate creation or usage.
+    # If RG_MODE is existing, we want main.bicep to deploy INTO it.
+    
     local params_file="${SCRIPT_DIR}/temp-params.json"
     
     cat > "$params_file" << EOF
 {
     "resourceGroupName": {
-        "value": "$lab_id"
+        "value": "$final_rg_name"
     },
     "location": {
         "value": "$location"
     },
     "namingPrefix": {
-        "value": "$lab_id"
+        "value": "avd"
     },
     "namingSuffix": {
-        "value": "$lab_id"
+        "value": "$PARTICIPANT"
     },
     "vmSize": {
         "value": "$vm_size"

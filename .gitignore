@@ -30,3 +30,9 @@ labs/lab1-intake-assistant/deploy.zip
 docs/samples/pdf_output/
 docs/samples/diagrams/*.png
 docs/samples/*.rendered.md
+
+# AVD lab local/runtime artifacts
+avd-lab/logs/
+avd-lab/tui/.venv/
+avd-lab/tui/.venv_smoke/
+avd-lab/tui/.state/
