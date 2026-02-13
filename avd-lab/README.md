@@ -1,4 +1,4 @@
-# AVD Lab Lifecycle Tool
+<# AVD Lab Lifecycle Tool
 
 A safe, repeatable tool to provision and tear down Azure Virtual Desktop (AVD) environments for course testing, with minimal manual steps and clear cost controls.
 
